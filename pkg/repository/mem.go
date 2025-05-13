@@ -26,83 +26,110 @@ func (m MemRepository) Find(ctx ResourceName, query *Query) ([]Object, error) {
 		return nil, nil
 	}
 
+	results := m.filterObjects(cache, query.Filters)
+	results = m.applyProjection(results, query.Projection)
+	results = m.applyDistinct(results, query.Projection, query.Distinct)
+	results = m.applySorting(results, query.Sort)
+	results = m.applyPagination(results, query.Skip, query.Limit)
+
+	return results, nil
+}
+
+// filterObjects filters objects based on the provided filters
+func (m MemRepository) filterObjects(objects map[any]Object, filters Filters) []Object {
 	var results []Object
-	for _, item := range cache {
-		if query.Filters.MatchValue(item) {
+	for _, item := range objects {
+		if filters.MatchValue(item) {
 			results = append(results, item)
 		}
 	}
+	return results
+}
 
-	// Apply Projection
-	if query.Projection != nil && len(query.Projection) > 0 {
-		for i := range results {
-			newItem := Object{}
-			for field := range query.Projection {
-				if val, ok := results[i][field]; ok {
-					newItem[field] = val
-				}
-			}
-			results[i] = newItem
+// applyProjection applies the projection to the results
+func (m MemRepository) applyProjection(results []Object, projection map[string]bool) []Object {
+	if projection == nil || len(projection) == 0 {
+		return results
+	}
+	for i, item := range results {
+		results[i] = m.projectObject(item, projection)
+	}
+	return results
+}
+
+// projectObject creates a new object with only the projected fields
+func (m MemRepository) projectObject(obj Object, projection map[string]bool) Object {
+	newItem := Object{}
+	for field := range projection {
+		if val, ok := obj[field]; ok {
+			newItem[field] = val
 		}
 	}
+	return newItem
+}
 
-	// Apply Distinct
-	if query.Distinct {
-		seen := make(map[string]bool)
-		var uniqueResults []Object
-		for _, item := range results {
-			key := buildDistinctKey(item, query.Projection)
-			if !seen[key] {
-				seen[key] = true
-				uniqueResults = append(uniqueResults, item)
+// applyDistinct applies the distinct operation to the results
+func (m MemRepository) applyDistinct(results []Object, projection map[string]bool, distinct bool) []Object {
+	if !distinct {
+		return results
+	}
+	seen := make(map[string]bool)
+	var uniqueResults []Object
+	for _, item := range results {
+		key := buildDistinctKey(item, projection)
+		if !seen[key] {
+			seen[key] = true
+			uniqueResults = append(uniqueResults, item)
+		}
+	}
+	return uniqueResults
+}
+
+// applySorting sorts the results based on the provided sort criteria
+func (m MemRepository) applySorting(results []Object, sortCriteria map[string]SortOrder) []Object {
+	if len(sortCriteria) == 0 {
+		return results
+	}
+	sort.SliceStable(results, func(i, j int) bool {
+		for field, order := range sortCriteria {
+			valI, okI := results[i][field]
+			valJ, okJ := results[j][field]
+			if !okI && !okJ {
+				continue
+			}
+			if !okI {
+				return order == SortOrderAsc
+			}
+			if !okJ {
+				return order == SortOrderDesc
+			}
+			if cmp := compareValues(valI, valJ); cmp != 0 {
+				return order == SortOrderAsc && cmp < 0 || order == SortOrderDesc && cmp > 0
 			}
 		}
-		results = uniqueResults
-	}
+		return false
+	})
+	return results
+}
 
-	// Apply Sort
-	if len(query.Sort) > 0 {
-		sort.SliceStable(results, func(i, j int) bool {
-			for field, order := range query.Sort {
-				valI, okI := results[i][field]
-				valJ, okJ := results[j][field]
-				if !okI && !okJ {
-					continue
-				}
-				if !okI {
-					return order == SortOrderAsc
-				}
-				if !okJ {
-					return order == SortOrderDesc
-				}
-				if cmp := compareValues(valI, valJ); cmp != 0 {
-					return order == SortOrderAsc && cmp < 0 || order == SortOrderDesc && cmp > 0
-				}
-			}
-			return false
-		})
+// applyPagination applies skip and limit to the results
+func (m MemRepository) applyPagination(results []Object, skip, limit *int) []Object {
+	s := 0
+	if skip != nil {
+		s = *skip
 	}
-
-	// Apply Skip and Limit
-	skip := 0
-	if query.Skip != nil {
-		skip = *query.Skip
+	l := len(results)
+	if limit != nil && *limit < l {
+		l = *limit
 	}
-	limit := len(results)
-	if query.Limit != nil {
-		limit = *query.Limit
+	if s > len(results) {
+		return []Object{}
 	}
-	end := skip + limit
+	end := s + l
 	if end > len(results) {
 		end = len(results)
 	}
-	if skip > len(results) {
-		results = []Object{}
-	} else {
-		results = results[skip:end]
-	}
-
-	return results, nil
+	return results[s:end]
 }
 
 func (m MemRepository) Insert(ctx ResourceName, items []Object) error {

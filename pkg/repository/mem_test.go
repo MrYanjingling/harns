@@ -24,7 +24,7 @@ func TestMemRepository(t *testing.T) {
 			(*item)["age"] = 26
 			return *item
 		}
-		filters := Filters{FieldFilter{Key: "name", Op: EQ{}, Value: "Alice"}}
+		filters := Filters{BinaryOp{Key: "name", Op: EQ{}, Value: "Alice"}}
 		updatedItems, err := repo.Update(ctx, updateFn, &filters)
 		if err != nil {
 			t.Fatalf("Update failed: %v", err)
@@ -36,7 +36,7 @@ func TestMemRepository(t *testing.T) {
 
 	// 测试 Clear
 	t.Run("Clear", func(t *testing.T) {
-		filters := Filters{FieldFilter{Key: "name", Op: EQ{}, Value: "Bob"}}
+		filters := Filters{BinaryOp{Key: "name", Op: EQ{}, Value: "Bob"}}
 		if err := repo.Clear(ctx, &filters); err != nil {
 			t.Fatalf("Clear failed: %v", err)
 		}
@@ -49,7 +49,7 @@ func TestMemRepository(t *testing.T) {
 	// 测试 Find
 	t.Run("Find", func(t *testing.T) {
 		query := NewQuery()
-		query.Filters = Filters{FieldFilter{Key: "age", Op: GTE{}, Value: 25}}
+		query.Filters = Filters{BinaryOp{Key: "age", Op: GTE{}, Value: 25}}
 		results, err := repo.Find(ctx, query)
 		if err != nil {
 			t.Fatalf("Find failed: %v", err)
@@ -78,12 +78,10 @@ func TestFind_Filters(t *testing.T) {
 	t.Run("NestedFilters", func(t *testing.T) {
 		query := NewQuery()
 		query.Filters = Filters{
-			FieldFilter{Key: "age", Op: GTE{}, Value: 30},
-			AndFilter{
-				Filters: Filters{
-					FieldFilter{Key: "name", Op: EQ{}, Value: "Charlie"},
-					FieldFilter{Key: "tags", Op: CONTAINS{}, Value: "d"},
-				},
+			BinaryOp{Key: "age", Op: GTE{}, Value: 30},
+			And{
+				BinaryOp{Key: "name", Op: EQ{}, Value: "Charlie"},
+				BinaryOp{Key: "tags", Op: CONTAINS{}, Value: "d"},
 			},
 		}
 		results, err := repo.Find(ctx, query)
@@ -92,6 +90,23 @@ func TestFind_Filters(t *testing.T) {
 		}
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result, got %d", len(results))
+		}
+	})
+
+	t.Run("Or", func(t *testing.T) {
+		query := NewQuery()
+		query.Filters = Filters{
+			Or{
+				BinaryOp{Key: "name", Op: EQ{}, Value: "Alice"},
+				BinaryOp{Key: "name", Op: EQ{}, Value: "Bob"},
+			},
+		}
+		results, err := repo.Find(ctx, query)
+		if err != nil {
+			t.Fatalf("Find failed: %v", err)
+		}
+		if len(results) != 2 {
+			t.Errorf("Expected 2 results, got %d", len(results))
 		}
 	})
 }
@@ -128,7 +143,7 @@ func TestFind_Operators(t *testing.T) {
 
 	t.Run("LT_Operator", func(t *testing.T) {
 		query := NewQuery()
-		query.Filters = Filters{FieldFilter{Key: "score", Op: LT{}, Value: 90}}
+		query.Filters = Filters{BinaryOp{Key: "score", Op: LT{}, Value: 90}}
 		results, _ := repo.Find(ctx, query)
 		if len(results) != 1 {
 			t.Errorf("LT operator test failed")
@@ -137,7 +152,7 @@ func TestFind_Operators(t *testing.T) {
 
 	t.Run("REGEXP_Operator", func(t *testing.T) {
 		query := NewQuery()
-		query.Filters = Filters{FieldFilter{Key: "name", Op: REGEXP{}, Value: "^Test"}}
+		query.Filters = Filters{BinaryOp{Key: "name", Op: REGEXP{}, Value: "^Test"}}
 		results, _ := repo.Find(ctx, query)
 		if len(results) != 2 {
 			t.Errorf("REGEXP operator test failed")

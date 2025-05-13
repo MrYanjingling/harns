@@ -64,13 +64,13 @@ type Filter interface {
 	ContainsField(key string) bool
 }
 
-type FieldFilter struct {
+type BinaryOp struct {
 	Key   string
 	Op    Operator
 	Value any
 }
 
-func (f FieldFilter) MatchValue(value Object) bool {
+func (f BinaryOp) MatchValue(value Object) bool {
 	val, ok := value[f.Key]
 	if !ok {
 		return false
@@ -78,7 +78,7 @@ func (f FieldFilter) MatchValue(value Object) bool {
 	return f.Op.MatchValue(val, f.Value)
 }
 
-func (f FieldFilter) ContainsField(key string) bool {
+func (f BinaryOp) ContainsField(key string) bool {
 	return f.Key == key
 }
 
@@ -318,24 +318,20 @@ func (op NIN) MatchValue(val any, expected any) bool {
 	return true
 }
 
-type AndFilter struct {
-	Filters Filters
+type And Filters
+
+func (f And) MatchValue(value Object) bool {
+	return Filters(f).MatchValue(value)
 }
 
-func (f AndFilter) MatchValue(value Object) bool {
-	return f.Filters.MatchValue(value)
+func (f And) ContainsField(key string) bool {
+	return Filters(f).ContainsField(key)
 }
 
-func (f AndFilter) ContainsField(key string) bool {
-	return f.Filters.ContainsField(key)
-}
+type Or Filters
 
-type OrFilter struct {
-	Filters Filters
-}
-
-func (f OrFilter) MatchValue(value Object) bool {
-	for _, filter := range f.Filters {
+func (f Or) MatchValue(value Object) bool {
+	for _, filter := range Filters(f) {
 		if filter.MatchValue(value) {
 			return true
 		}
@@ -343,6 +339,6 @@ func (f OrFilter) MatchValue(value Object) bool {
 	return false
 }
 
-func (f OrFilter) ContainsField(key string) bool {
-	return f.Filters.ContainsField(key)
+func (f Or) ContainsField(key string) bool {
+	return Filters(f).ContainsField(key)
 }
