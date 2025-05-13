@@ -1,0 +1,257 @@
+swagger: "2.0"
+info:
+  description: >-
+
+    Data Manager API provides the following functionalities:
+
+    # TimeSeries
+
+    Uploading time series data from north end is also allowed. In this scenario, the data point mapping or agent is not necessary. The time format is `RFC3339Nano`, e.g. "2006-01-02T15:04:05.999999999Z07:00".
+
+    # Exchange
+
+    Exchanging time series, event data. There are two ways to upload message data to exchange.
+
+    - Publishing time series or event data to MQTT topic. The topic format is `data/{version}/{agentId}/{dataSourceId}`, e.g. "data/v1/0bac49c754354d54b8f1152eea3edde4/e864431bb7ba4912b8f4794c7f151f8e". Once an agent is created, the corresponding topic will be subscribed. The following snapshot shows the example of MQTT message payload of time series:
+      ```
+      {
+        "payload": {
+          "data": [
+            {
+              "timestamp": "2021-05-06T10:05:06.000Z",
+              "values": [
+                {
+                  "dataPointId": "analog001",
+                  "value": 26.9
+                }
+              ]
+            }
+          ]
+        }
+      }
+      ```
+
+      For event, the topic format can be `data/{version}/{agentId}` or `data/{version}/{agentId}/{dataSourceId}`. The following snapshot shows the example of MQTT message payload of event:
+      ```
+      {
+        "payload": {
+          "type": "event",
+          "data": [
+            {
+              "id": "cc5a43c118d341638304dfb1885d0ac4", // Can be empty, IoT shall generate
+              "correlationId": "817635bfbded491aa1761178af8fcbf0", // Can be empty, IoT shall generate
+              "type": "main.AgentEvent", // Can be empty, the default type is main.StandardEvent
+              "timestamp": "2021-05-06T10:05:06.000Z",
+              "fields": {
+                "温度": 26.9
+              }
+            }
+          ]
+        }
+      }
+      ```
+
+    - Invoking Restful API to upload time series or event data. Now, the `agentId` is populated purely in `token` in the request header. In the future, the agentId should be populated in jwt token. The following snapshot shows the example of http request payload of time series:
+      ```
+      {
+        "payload": {
+          "dataSourceId": "741a14d10ff44461bb269a8a58ec8ea7",
+          "data": [
+            {
+              "timestamp": "2021-05-06T10:05:06.000Z",
+              "values": [
+                {
+                  "dataPointId": "analog001",
+                  "value": 26.9
+                }
+              ]
+            }
+          ]
+        }
+      }
+      ```
+      For event, the payload is the same with MQTT message payload.
+
+  version: "1.6.0"
+  title: "Data Manager API"
+basePath: "/api/data/v1"
+tags:
+  - name: TimeSeries
+    description: Managing time series data
+  - name: Exchange
+    description: Managing data routing
+schemes:
+  - http
+  - https
+paths:
+  '/timeseries/{thingId}/{propertySetName}':
+    put:
+      tags:
+        - TimeSeries
+      summary: Create or update time series data from north end
+      operationId: saveOrUpdateTimeSeries
+      consumes:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/thingId'
+        - $ref: '#/parameters/propertySetName'
+        - in: body
+          name: timeseries
+          description: time series data
+          required: true
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TimeSeriesDataItem'
+      responses:
+        "202":
+          description: Accepted.
+        "400":
+          description: Invalid Request.
+    get:
+      tags:
+        - TimeSeries
+      summary: Read timeseries data
+      operationId: getTimeSeries
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/thingId'
+        - $ref: '#/parameters/propertySetName'
+        - name: start
+          in: query
+          description: Beginning of the time range to be read (inclusive).
+          required: false
+          type: string
+          format: date-time
+        - name: end
+          in: query
+          description: End of the time range to be read (exclusive).
+          required: false
+          type: string
+          format: date-time
+        - name: limit
+          in: query
+          description: Maximum number of time series data items to be retrieved.
+          required: false
+          type: integer
+          default: 2000
+          maximum: 2000
+        - name: select
+          in: query
+          description: Comma-separated list of properties to be returned. By default all properties of a thing are considered.
+          required: false
+          type: string
+        - name: sort
+          in: query
+          description: Define sorting order of returned data. Sorting can be chronologically ascending (<i>asc</i>) or descending (<i>desc</i>).
+          required: false
+          type: string
+          enum: [asc, desc]
+          default: asc
+        - name: latest
+          in: query
+          description: If true, only the latest value of each property is returned. Latest values must be at least 1 second old and at maximum 7 days old, in order to be considered. The returned values might be co-located or spread over multiple timestamps. Each property appears at max once in the response. The select parameter can be used to limit the properties to be considered. Parameters start, end, and limit must not be used in conjunction with latest.
+          required: false
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: array of time series
+          headers:
+            link:
+              type: string
+              description: Contains a link to the next page, if there is a next page
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TimeSeriesDataItem'
+        '400':
+          description: Invalid Request.
+    delete:
+      tags:
+        - TimeSeries
+      summary: Delete timeseries data
+      description: Delete time series data for one combination of a thing and a property set. All property values within the given time range are deleted.
+      operationId: deleteTimeSeries
+      parameters:
+        - $ref: '#/parameters/thingId'
+        - $ref: '#/parameters/propertySetName'
+        - name: start
+          in: query
+          description: Beginning of the time range to be delete (inclusive).
+          required: true
+          type: string
+          format: date-time
+        - name: end
+          in: query
+          description: End of the time range to be delete (exclusive).
+          required: true
+          type: string
+          format: date-time
+      responses:
+        "202":
+          description: Accepted.
+        "400":
+          description: Invalid Request.
+  /exchange:
+    post:
+      tags:
+        - Exchange
+      summary: Upload message data from south end
+      operationId: uploadTimeSeries
+      consumes:
+        - "application/json"
+      parameters:
+        - in: header
+          name: token
+          description: jwt token. Now, the `agentId` is populated.
+          required: true
+          type: string
+        - in: body
+          name: message
+          description: message
+          required: true
+          schema:
+            type: string
+            format: binary
+      responses:
+        "202":
+          description: Accepted.
+        "400":
+          description: Invalid Request.
+definitions:
+  TimeSeriesDataItem:
+    type: object
+    required:
+      - '_time'
+    properties:
+      _time:
+        type: string
+        description: Timestamp of the data points.
+        format: date-time
+    additionalProperties:
+      description: Properties as defined by the thing containing the time series data.
+    example:
+      _time: "2021-05-06T10:05:06.000Z"
+      温度: 26.9
+      湿度: 60
+
+parameters:
+  thingId:
+    name: thingId
+    in: path
+    description: Unique identifier of the thing
+    required: true
+    type: string
+    minLength: 32
+    maxLength: 32
+    pattern: "[a-f0-9]{32}"
+  propertySetName:
+    name: propertySetName
+    in: path
+    description: Name of the property set
+    required: true
+    type: string
+    minLength: 1
+    maxLength: 64

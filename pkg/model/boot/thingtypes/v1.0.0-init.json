@@ -1,0 +1,105 @@
+{
+  "propertySetTypes": [
+    {
+      "name": "Contact",
+      "description": "Contact definition for person.",
+      "category": "static",
+      "properties": [
+        {
+          "name": "name",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        },
+        {
+          "name": "company",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        },
+        {
+          "name": "title",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        },
+        {
+          "name": "mobile",
+          "datatype": "string",
+          "searchable": true,
+          "length": 38
+        },
+        {
+          "name": "telephone",
+          "datatype": "string",
+          "searchable": true,
+          "length": 38
+        },
+        {
+          "name": "email",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        }
+      ]
+    },
+    {
+      "name": "Location",
+      "description": "Location definition for address.",
+      "category": "static",
+      "properties": [
+        {
+          "name": "country",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        },
+        {
+          "name": "province",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        },
+        {
+          "name": "city",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        },
+        {
+          "name": "street",
+          "datatype": "string",
+          "searchable": true,
+          "length": 38
+        },
+        {
+          "name": "longitude",
+          "datatype": "double"
+        },
+        {
+          "name": "latitude",
+          "datatype": "double"
+        }
+      ]
+    }
+  ],
+  "thingTypes": [
+    {
+      "name": "version",
+      "description": "Type definition to store version information of the thing type set.",
+      "characteristics": [
+        {
+          "name": "version",
+          "datatype": "string",
+          "searchable": true,
+          "length": 255
+        }
+      ]
+    },
+    {
+      "name": "BaseAgent",
+      "description": "All agents' ancestor. If you need create an agent, you have to inherit it.",
+      "instantiable": false
+    }
+  ]
+}

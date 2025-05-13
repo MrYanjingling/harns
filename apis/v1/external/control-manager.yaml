@@ -1,0 +1,682 @@
+openapi: 3.0.1
+info:
+  description: >-
+    API defining resources and operations for configuring, reading and managing actions, commands and command types.
+
+    ## Differences between Action and Command
+
+    Generally, a command consists of several actions.
+    In Harns platform, commands and events are conceptually corresponding, actions and properties are conceptually corresponding.
+
+    ## Action
+
+    When a property set type or a thing type is defining, if the access mode of a property is set to `rw`,
+    the property set of the thing which is instantiated from the thing type has a new action.
+
+    ## Command
+
+    A command should be associated to a thing type. The derived thing type inherits all commands of its super thing types.
+
+    If several options need be appended to a derived command, it is allowed only if there is no duplicated option with super commands.
+
+    The thing that has an agent, which they have same id, is allowed to deliver command.
+
+  version: "1.6.0"
+  title: "Control Manager API"
+servers:
+  - url: "/api/control/v1"
+tags:
+  - name: CommandType
+    description: Managing command types
+  - name: Command
+    description: Managing commands
+  - name: Action
+    description: Managing actions
+#schemes:
+#  - http
+#  - https
+paths:
+  /commandTypes:
+    post:
+      tags:
+        - CommandType
+      summary: Create a command type
+      operationId: createCommandType
+      requestBody:
+        description: command type
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandType'
+        required: true
+      parameters:
+        - in: query
+          name: thingTypeId
+          schema:
+            type: string
+          description: thingTypeId
+          required: true
+      responses:
+        "201":
+          description: The command type has been created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandType'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - CommandType
+      summary: List all command types
+      operationId: listCommandTypes
+      parameters:
+        - in: query
+          name: thingTypeId
+          schema:
+            type: string
+          description: thingTypeId
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria.
+            Command type supports the following filter fields:
+            - id
+            - thingTypeId
+            - name
+
+            For **name**, except normal json format, the following functions are supported: `eq`, `in`, `contains`, `startsWith` and `endsWith`.
+
+            For example:
+
+            ```
+            {"name": "设置温度"}
+            ```
+            ```
+            {"name": {"eq": "设置温度"}}
+            ```
+          schema:
+            type: string
+        - name: exploded
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            Specifies if the command type should include all of its options. Default is false.
+      responses:
+        '200':
+          description: Array of command types matched the tenant scope.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommandType'
+        '400':
+          description: Invalid request.
+  '/commandTypes/{id}':
+    get:
+      tags:
+        - CommandType
+      summary: Get command type by id
+      operationId: getCommandType
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: thingTypeId
+          schema:
+            type: string
+          description: thingTypeId
+          required: true
+        - name: exploded
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            Specifies if the command type should include all of its options. Default is false.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandType'
+        '400':
+          description: Invalid Request.
+        '404':
+          description: Not Found.
+    patch:
+      tags:
+        - CommandType
+      summary: Patch a command type
+      description: Patch the command type with the provided content. Conforms to RFC 7396 - JSON merge Patch and RFC 6902 - JSON Patch.
+      operationId: updateCommandType
+      requestBody:
+        description: command type
+        content:
+          application/json-patch+json:
+            schema:
+              type: object
+              example:
+                [
+                  {
+                    "op": "replace",
+                    "path": "/description",
+                    "value": "设置温度"
+                  },
+                  {
+                    "op": "add",
+                    "path": "/options/1",
+                    "value": {
+                      "name": "new",
+                      "datapoint": "int"
+                    }
+                  }
+                ]
+          application/merge-patch+json:
+            schema:
+              type: object
+              example:
+                {
+                  "description": "设置温度",
+                  "ack": true
+                }
+        required: true
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: thingTypeId
+          schema:
+            type: string
+          description: thingTypeId
+          required: true
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandType'
+        '400':
+          description: Invalid Request.
+        '404':
+          description: Not Found.
+    delete:
+      tags:
+        - CommandType
+      summary: Delete a command type
+      operationId: deleteCommandType
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: thingTypeId
+          schema:
+            type: string
+          description: thingTypeId
+          required: true
+        - in: header
+          name: If-Match
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The deleted commandType
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandType'
+        "400":
+          description: Invalid Request.
+        "404":
+          description: Not Found.
+        "412":
+          description: Precondition Failed.
+        "428":
+          description: Precondition Required.
+        "500":
+          description: Internal Server Error.
+  '/commands':
+    post:
+      tags:
+        - Command
+      summary: Deliver a command
+      operationId: deliverCommand
+      requestBody:
+        description: command options
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+                description: Command options and values.
+        required: true
+      parameters:
+        - in: query
+          name: thingId
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: commandTypeId
+          schema:
+            type: string
+          required: true
+      responses:
+        '202':
+          description: OK.
+        '400':
+          description: Invalid Request.
+        '404':
+          description: Not Found.
+    get:
+      tags:
+        - Command
+      summary: Get commands history
+      operationId: getCommands
+      parameters:
+        - in: query
+          name: thingId
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: commandTypeId
+          schema:
+            type: string
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Beginning of the time range to be read (inclusive).
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End of the time range to be read (exclusive).
+        - name: filter
+          in: query
+          schema:
+            type: string
+          description: |-
+            Specifies the additional filtering criteria. <br/>
+            `If filter is specified, commandTypeId in query should also be specified.` <br/>
+            Command supports the following filter fields:
+            - all filterable options defined in command type
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: Order in which events are returned. Supported only on filterable fields. Default is `_time` descending order.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 2000
+          description: Maximum number of time series data items to be retrieved.
+        - name: latest
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            If true, only the latest value of each event is returned. Latest values must be at least 1 second old and at maximum 7 days old, in order to be considered. The select parameter can be used to limit the properties to be considered. Parameters start, end, and limit must not be used in conjunction with latest.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commands:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Command'
+        '400':
+          description: Invalid Request.
+        '404':
+          description: Not Found.
+  '/actions/{thingId}/{propertySetName}':
+    post:
+      tags:
+        - Action
+      summary: Execute a action
+      operationId: executeAction
+      requestBody:
+        description: property values
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+                description: property values.
+                example:
+                  温度: "26.9"
+        required: true
+      parameters:
+        - in: path
+          name: thingId
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: propertySetName
+          schema:
+            type: string
+          required: true
+      responses:
+        '202':
+          description: Accepted.
+        '400':
+          description: Invalid Request.
+        '404':
+          description: Not Found.
+    get:
+      tags:
+        - Action
+      summary: Get actions history
+      operationId: getActions
+      parameters:
+        - in: path
+          name: thingId
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: propertySetName
+          schema:
+            type: string
+          required: true
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Beginning of the time range to be read (inclusive).
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End of the time range to be read (exclusive).
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: Order in which events are returned. Supported only on filterable fields. Default is `_time` descending order.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 2000
+          description: Maximum number of time series data items to be retrieved.
+        - name: latest
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            If true, only the latest value of each event is returned. Latest values must be at least 1 second old and at maximum 7 days old, in order to be considered. The select parameter can be used to limit the properties to be considered. Parameters start, end, and limit must not be used in conjunction with latest.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActionBase'
+        '400':
+          description: Invalid Request.
+        '404':
+          description: Not Found.
+
+components:
+  schemas:
+    CommandType:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          description: The command type's id is a unique identifier. Once set cannot be changed.
+          readOnly: true
+          example: main.设置温度
+        eTag:
+          type: integer
+          description: incremental counter for optimistic locking
+          readOnly: true
+          example: 1
+        tenant:
+          type: string
+          description: Your tanant id. It is "main" on the edge side.
+          readOnly: true
+          example: main
+        user:
+          type: string
+          description: The manipulator who trigger the command. `Unused now.`
+          readOnly: true
+          example: admin@example.com
+        name:
+          type: string
+          maxLength: 64
+          pattern: '^[^\s\.\\\/\?](?!.*[\.\\\/\?]).*(?<![\s\.\\\/\?])$'
+          example: 设置温度
+        description:
+          type: string
+          maxLength: 255
+          example: 设置温度
+        ack:
+          type: boolean
+          description: |
+            - If true, it shall wait the result of executing command. The wait timeout is configured at command line tool.
+            - If false, it just delivers the command and doesn't expect to know the result of executing command.
+          default: false
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+    Option:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the field.
+          maxLength: 64
+          pattern: '^[^\s\\\/](?!.*[\\\/]).*(?<![\s\\\/])$'
+          example: 温度
+        description:
+          type: string
+          maxLength: 255
+          example: 摄氏度
+        required:
+          type: boolean
+          description: See more information at `default` field.
+          example: true
+          default: false
+        filterable:
+          type: boolean
+          description: Used to search command history by option name and value.
+          example: true
+          default: false
+        datatype:
+          type: string
+          description: |
+            Data type. </br>
+
+            For `int`, if you provide a double value, it shall be converted to an int by simply down-casting e.g. 6.7 will give you int 6.
+          enum:
+            - string
+            - int
+            - double
+            - bool
+            - timestamp
+            - enum
+          default: string
+          example: double
+        values:
+          type: array
+          items:
+            type: string
+          description: >-
+            This field is applicable only if the field's datatype is
+            enum, otherwise it should be skipped.
+
+            - For `enum`, the values must be strings.
+        default:
+          type: number
+          description: >
+            Considering the following scenarios: </br>
+
+            1. If the option is required and has default value, when a request w/o the option is sent, the option w/ its default value is appended by default. </br>
+
+            1. If the option is required and has default value, when a request w/ the option w/o value is sent, the option's default value is appended. </br>
+
+            1. If the option is required and has not default value, a request w/ the option should have corresponding value, otherwise, it is an invalid request. </br>
+
+            1. If the option is not required and has default value, when a request w/o the option is sent, the option is ignored. </br>
+
+            1. If the option is not required and has default value, when a request w/ the option w/o value is sent, the option's default value is appended. </br>
+
+            1. If the option is not required and has not default value, a request w/ the option should have corresponding value, otherwise, it is an invalid request. </br>
+          example: 25
+        min:
+          type: number
+          description: |
+            Beginning of the value for numerical datatype (inclusive). </br>
+
+            For `int`, if you provide a double value, it shall be converted to an int by simply down-casting e.g. 6.7 will give you int 6.
+          example: 18
+        max:
+          type: number
+          description: |
+            End of the value for numerical datatype (inclusive). </br>
+
+            For `int`, if you provide a double value, it shall be converted to an int by simply down-casting e.g. 6.7 will give you int 6.
+          example: 32
+    Command:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+          example: 3285678
+        thingId:
+          type: string
+          minLength: 32
+          maxLength: 32
+          example: 009a986c2eff683999686181a7e2d2f1
+        typeId:
+          type: string
+          example: main.设置温度
+        _time:
+          type: string
+          description: Time when the command is initiated
+          format: date-time
+        state:
+          type: string
+          enum:
+            - delivering
+            - delivered
+            - success
+            - fail
+          example: success
+        code:
+          type: integer
+          description: Result code of command executing. `0` represents sucess.
+          example: 0
+        message:
+          type: string
+          description: Result message of command excuting. `NULL` is allowed. It depends on agent implements.
+          example: success
+      additionalProperties:
+        type: string
+        description: Command options and values.
+    ActionBase:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+          example: 3285678
+        _time:
+          type: string
+          description: Time when the command is initiated
+          format: date-time
+        state:
+          type: string
+          enum:
+            - delivering
+            - delivered
+            - success
+            - fail
+        code:
+          type: integer
+          description: Result code of command executing. `0` represents sucess.
+        message:
+          type: string
+          description: Result message of command excuting. `NULL` is allowed. It depends on agent implements.
+        additionalProperties:
+          type: string
+          description: Command options and values.
+      example:
+        id: "3285678"
+        _time: "2021-08-10T09:45:27.918Z"
+        state: "success"
+        code: 0
+        message: "success"
+        温度: "26.9"
+    Action:
+      type: object
+      allOf:
+        - properties:
+            thingId:
+              type: string
+              example: 009a986c2eff683999686181a7e2d2f1
+            propertySetName:
+              type: string
+              example: 温湿度传感器
+        - $ref: '#/components/schemas/ActionBase'
+      example:
+        thingId: "009a986c2eff683999686181a7e2d2f1"
+        propertySetName: "温湿度传感器"
+        id: "3285678"
+        _time: "2021-08-10T09:45:27.918Z"
+        state: "success"
+        code: 0
+        message: "success"
+        温度: "26.9"

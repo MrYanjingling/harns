@@ -1,0 +1,2021 @@
+openapi: 3.0.1
+info:
+  title: Model Manager API
+  description: |
+    API defining resources and operations for configuring, reading and managing things, thing types, agents, agent types and data point mappings.
+    ## North End
+    ### Characteristic
+    It is a particular quality or feature that is typical of someone or something, and it shall not change over time. In other word,  it cannot be used for data ingestion so they are called as Static Properties.  e.g. the size of a sedan, the location of a machine.
+    ### Property
+    It is a quality or feature of someone or something, and it shall change over time. e.g. the pressure of tire of sedan, the temperature of a machine.
+    ### Property Set Type
+    It is a template for creating multiple property sets with the same properties. property sets group related data points based on their logical association. An property set can consist of several properties. You can configure, read or delete your property set types. An property set type is accessed by its ID. e.g. tire of sedan, temperature and humidity sensor of a machine.
+    ### Thing Type
+    An Thing Type is a pre-configured template for creating multiple things with the same properties. Things take on the properties of the type on which they are based. Within the type, you can define which property sets are integrated into the template. You can use a type in various things and built several inter-conections between a type and things. You can configure, read or delete your types. An thing type is accessed by its ID. Thing Type consists of Characteristics and Property Sets. The Characteristics and Property Sets are also inherited from parent Thing Types.
+    ### Thing
+    It is the first class within the Harns environment. e.g. it retrieves data, events, evaluates rules, rolls up and pre-aggregates data, delivering actions or commands etc.
+
+    ## South End
+    ### Data Point
+    Generally, it is a register of a device, it holds the data that is read and uploaded by data collector of device. Except basic information of `id`, `datatype`, `unit` and `accessMode`, you can define extra information. e.g. Port, address of register, offset of memory.
+    ### Data Source
+    it is a logical group, e.g. a sensor or a machine, which contains one or more measurable data points, e.g. temperature or pressure. Except data points information, You can configure extra information for it, e.g. IP, Port, Offset etc.
+    It can be a physical device or a virtual device (e.g. a group of data points)
+    ### Agent Type
+    It is a template for creating multiple agents with the same data points. It has not the ability to inherit from parent Agent Types.
+    ### Agent
+    It is the primary actor within the Harns environment. e.g. it uploads data, retrieves events, changes their configuration etc.
+    When the agent is created, an initial access token (IAT) is generated. The IAT is a JSON Web Token (JWT) that holds various information about the agent and must be downloaded to the agent. The IAT is valid for one week (7 days). It required for onboarding the agent to Harns. Harns checks the signature of the IAT to validate the agent. After onboarding the agent is authorized and authenticated to communicate with Harns.
+    It can be a physical entity or a virtual entity. Its first responsibility is to communicate with Harns carrying on IAT.
+
+    ## Mapping
+    It makes a connection between a property and a datapoint. Harns needs a data point mapping for storing the data it receives from an agent. This maps the data points from the data source configuration to properties of the digital entity, that represents the agent. When Harns receives data from an agent, it looks up which property the data point is mapped to and stores the data there.
+    In addition to storing data, it is used to execute an action. An action changes the value of a property, Harns uses data point mapping to look up the data point the property is mapped to and writes the value into data point.
+    If a property and a data point are able to be mapped, they should have the same `datatype` and `unit`. And more, when `accessMode` of a data point is `r`(read), they are able to be mapped only if `accessMode` of a property is `r`(read). In other word, if `accessMode` of the property is `rw`(read and write), the mapping will be rejected by Harns.
+  version: 1.6.0
+servers:
+  - url: /api/model/v1
+tags:
+  - name: PropertySetType
+    description: Managing property set types
+  - name: ThingType
+    description: Managing thing types
+  - name: Thing
+    description: Managing things
+  - name: AgentType
+    description: Managing agent types
+  - name: Agent
+    description: Managing agents
+  - name: DataPointMapping
+    description: Managing data point mappings
+paths:
+  /propertysettypes:
+    get:
+      tags:
+        - PropertySetType
+      summary: List all property set types
+      operationId: listPropertySetTypes
+      responses:
+        200:
+          description: Array of property set types matched the tenant scope and filter
+            criterias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  propertySetTypes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PropertySetType'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+    post:
+      tags:
+        - PropertySetType
+      summary: Create a property set type
+      operationId: createPropertySetType
+      requestBody:
+        description: property set type
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertySetType'
+        required: true
+      responses:
+        201:
+          description: The property set type has been created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertySetType'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+  /propertysettypes/{id}:
+    get:
+      tags:
+        - PropertySetType
+      summary: Read a property set type
+      operationId: getPropertySetType
+      parameters:
+        - name: id
+          in: path
+          description: The type's id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+      responses:
+        200:
+          description: The property set type
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertySetType'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+    delete:
+      tags:
+        - PropertySetType
+      summary: Delete a property set type
+      description: Property set type can only be deleted if there is no thing type using it.
+      operationId: deletePropertySetType
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The deleted property set type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertySetType'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed. Resource is changed in the background.
+        428:
+          description: Precondition Required.
+    patch:
+      tags:
+        - PropertySetType
+      summary: Patch a property set type
+      description: Patch the property set type with the provided content. Only adding properties and restricted updates on properties is supported. Conforms to RFC 7396
+        - JSON merge Patch and RFC 6902 - JSON Patch.
+      operationId: patchPropertySetType
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: property set type
+        content:
+          application/json-patch+json:
+            schema:
+              type: object
+              example:
+                [
+                  {
+                    "op": "replace",
+                    "path": "/properties/0/accessMode",
+                    "value": "rw"
+                  },
+                  {
+                    "op": "add",
+                    "path": "/properties/1",
+                    "value": {
+                      "name": "new",
+                      "length": 16
+                    }
+                  }
+                ]
+          application/merge-patch+json:
+            schema:
+              type: object
+              example:
+                {
+                  "properties": [
+                    {
+                      "name": "温度",
+                      "datatype": "double",
+                      "unit": "摄氏度",
+                      "length": 255,
+                      "accessMode": "rw"
+                    },
+                    {
+                      "name": "new",
+                      "length": 16
+                    }
+                  ]
+                }
+        required: true
+      responses:
+        200:
+          description: The patched property set type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertySetType'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+  /thingtypes:
+    get:
+      tags:
+        - ThingType
+      summary: List all thing types
+      operationId: listThingTypes
+      parameters:
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria.
+            Thing type supports the following filter fields:
+            - id
+            - parentTypeId
+            - name
+            
+            For **name**, except normal json format, the following functions are supported: `eq`, `in`, `contains`, `startsWith` and `endsWith`.
+            
+            For example:
+            
+            ``` 
+            {"name": "温湿度传感器"} 
+            ```
+            ``` 
+            {"name": {"eq": "温湿度传感器"}} 
+            ```
+          schema:
+            type: string
+        - name: exploded
+          in: query
+          description: Specifies if the thing type should include all of it's inherited
+            characteristics and properties. Default is false.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Array of thing types matched the tenant scope and filter criterias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingTypeResourceArray'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+    post:
+      tags:
+        - ThingType
+      summary: Create a thing type
+      operationId: createThingType
+      requestBody:
+        description: thingtype
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThingType'
+        required: true
+      responses:
+        201:
+          description: The thing type has been created
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingTypeResource'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+  /thingtypes/{id}:
+    get:
+      tags:
+        - ThingType
+      summary: Read a thing type
+      operationId: getThingType
+      parameters:
+        - name: id
+          in: path
+          description: The type's id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+        - name: exploded
+          in: query
+          description: Specifies if the thing type should include all of it's inherited
+            characteristics and properties. Default is false.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: The thing type
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingTypeResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+    delete:
+      tags:
+        - ThingType
+      summary: Delete a thing type
+      description: When deleted a thing type, all thing and command type which belong
+        to the thing type will be deleted
+      operationId: deleteThingType
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The deleted thing type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingTypeResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+    patch:
+      tags:
+        - ThingType
+      summary: Patch a thing type
+      description: Patch the thing type with the provided content. Shared property set type have to be modified in property set type. Exclusive property set type is able to be changed here.  Only adding properties and restricted updates on properties is supported. Conforms to RFC 7396
+        - JSON merge Patch and RFC 6902 - JSON Patch.
+      operationId: patchThingType
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: thing type
+        content:
+          application/json-patch+json:
+            schema:
+              type: object
+              example:
+                [
+                  {
+                    "op": "replace",
+                    "path": "/propertysets/0/properties/0/accessMode",
+                    "value": "rw"
+                  },
+                  {
+                    "op": "add",
+                    "path": "/propertysets/0/properties/1",
+                    "value": {
+                      "name": "new",
+                      "length": 16
+                    }
+                  }
+                ]
+          application/merge-patch+json:
+            schema:
+              type: object
+              example:
+                {
+                  "propertysets": [
+                    {
+                      "name": "峨眉山会议室温湿度",
+                      "propertySetType": {
+                        "description": "DH11温湿度传感器",
+                        "properties": [
+                          {
+                            "name": "温度",
+                            "datatype": "double",
+                            "unit": "摄氏度",
+                            "length": 255,
+                            "accessMode": "rw",
+                          },
+                          {
+                            "name": "new",
+                            "length": 16
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+        required: true
+      responses:
+        200:
+          description: The patched thing type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingTypeResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+  /things:
+    get:
+      tags:
+        - Thing
+      summary: List all things
+      operationId: listThings
+      parameters:
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria. <br></br> Thing supports the following filter fields:
+            - id
+            - typeId
+            - parentId
+            - name
+            - hasType
+            
+            For **name**, except normal json format, the following functions are supported: `eq`, `in`, `contains`, `startsWith` and `endsWith`.
+          schema:
+            type: string
+      responses:
+        200:
+          description: Array of things matched the tenant scope and filter criterias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingResourceArray'
+        400:
+          description: Invalid request.
+        500:
+          description: Internal Server Error.
+    post:
+      tags:
+        - Thing
+      summary: Create a thing
+      operationId: createThing
+      requestBody:
+        description: thing
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Thing'
+        required: true
+      responses:
+        201:
+          description: The thing has been created
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingResource'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+  /things/{id}:
+    get:
+      tags:
+        - Thing
+      summary: Read a thing
+      operationId: getThing
+      parameters:
+        - name: id
+          in: path
+          description: The thing's id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+      responses:
+        200:
+          description: The thing type
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+    delete:
+      tags:
+        - Thing
+      summary: Delete a thing
+      description: Delete a thing and the associated resources. Such as data point mappings, time series, events, and so on with the thing.
+      operationId: deleteThing
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The deleted thing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+    patch:
+      tags:
+        - Thing
+      summary: Patch a thing
+      description: Patch the thing with the provided content. Only values can be modified,
+        thing's structure have to be modified in thing's type. Conforms to RFC 7396
+        - JSON merge Patch and RFC 6902 - JSON Patch.
+      operationId: patchThing
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: thing
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/jsonPatch'
+          application/merge-patch+json:
+            schema:
+              type: object
+              properties:
+                characteristics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        example: 长
+                      value:
+                        type: string
+                        example: "20"
+        required: true
+      responses:
+        200:
+          description: The patched thing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+  /things/{id}/characteristics:
+    get:
+      tags:
+        - Thing
+      summary: Read all characteristics of this thing
+      operationId: getThingCharacteristics
+      parameters:
+        - name: id
+          in: path
+          description: The thing's id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+      responses:
+        200:
+          description: The thing's all characteristics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  characteristics:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CharacteristicThing'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+  /things/{id}/propertysets:
+    get:
+      tags:
+        - Thing
+      summary: Read all propertysets of this thing
+      operationId: getThingpropertysets
+      parameters:
+        - name: id
+          in: path
+          description: The thing's id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+      responses:
+        200:
+          description: The thing's all propertysets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  propertysets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Name of property set type, it must be unique
+                            for the thing.
+                          example: 峨眉山会议室温湿度
+                        propertySetType:
+                          type: object
+                          allOf:
+                            - $ref: '#/components/schemas/PropertySetType'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+  /agenttypes:
+    get:
+      tags:
+        - AgentType
+      summary: List all agent types
+      operationId: listAgentTypes
+      parameters:
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria. <br></br> Thing supports the following filter fields:
+            - name
+          schema:
+            type: string
+      responses:
+        200:
+          description: Array of agent types matched the tenant scope and filter criterias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTypeResourceArray'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+    post:
+      tags:
+        - AgentType
+      summary: Create an agent type
+      operationId: createAgentType
+      requestBody:
+        description: agenttype
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentType'
+        required: true
+      responses:
+        201:
+          description: The agent type has been created
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTypeResource'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+  /agenttypes/{id}:
+    get:
+      tags:
+        - AgentType
+      summary: Read an agent type
+      operationId: getAgentType
+      parameters:
+        - name: id
+          in: path
+          description: The type's id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+      responses:
+        200:
+          description: The agent type
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTypeResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+    delete:
+      tags:
+        - AgentType
+      summary: Delete an agent type
+      operationId: deleteAgentType
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The deleted agent type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTypeResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed. Resource is changed in the background.
+        428:
+          description: Precondition Required.
+    patch:
+      tags:
+        - AgentType
+      summary: Patch an agent type
+      description: Patch the agent type with the provided content. Conforms to RFC 7396
+        - JSON merge Patch and RFC 6902 - JSON Patch.
+      operationId: patchAgentType
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: agent type
+        content:
+          application/json-patch+json:
+            schema:
+              type: object
+              example:
+                [
+                  {
+                    "op": "replace",
+                    "path": "/dataSources/0/dataPoints/0/accessMode",
+                    "value": "rw"
+                  },
+                  {
+                    "op": "add",
+                    "path": "/dataSources/0/dataPoints/1",
+                    "value": {
+                      "id": "analog002",
+                      "datatype": "int"
+                    }
+                  }
+                ]
+          application/merge-patch+json:
+            schema:
+              type: object
+              example:
+                {
+                  "dataSources": [
+                    {
+                      "name": "DHT11温度传感器",
+                      "description": "在峨眉山会议室的DHT11温度传感器",
+                      "dataPoints": [
+                        {
+                          "id": "analog001",
+                          "name": "温度",
+                          "description": "读取温度",
+                          "datatype": "double",
+                          "unit": "摄氏度",
+                          "accessMode": "rw",
+                          "customData": {
+                            "host": "10.125.10.101"
+                          }
+                        }
+                      ],
+                      "customData": {
+                        "host": "10.125.10.101"
+                      }
+                    },
+                    {
+                      "id": "analog002",
+                      "datatype": "int"
+                    }
+                  ]
+                }
+        required: true
+      responses:
+        200:
+          description: The patched agent type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTypeResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+  /agents:
+    get:
+      tags:
+        - Agent
+      summary: List all agents
+      operationId: listAgents
+      parameters:
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria. <br></br> Thing supports the following filter fields:
+            - name
+          schema:
+            type: string
+      responses:
+        200:
+          description: Array of agents matched the tenant scope and filter criterias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResourceArray'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+    post:
+      tags:
+        - Agent
+      summary: Create an agent
+      operationId: createAgent
+      requestBody:
+        description: agent
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Agent'
+        required: true
+      responses:
+        201:
+          description: The agent has been created
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResource'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+  /agents/{id}:
+    get:
+      tags:
+        - Agent
+      summary: Read an agent
+      operationId: getAgent
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+      responses:
+        200:
+          description: The agent
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+    put:
+      tags:
+        - Agent
+      summary: Update an agent
+      description: If there are data point mappings for the agent, all of data point
+        mappings are deleted when updating the agent.
+      operationId: updateAgent
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: agent
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Agent'
+        required: true
+      responses:
+        200:
+          description: The agent has been updated
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+        422:
+          description: Unprocessable Entity.
+        500:
+          description: Internal Server Error.
+    delete:
+      tags:
+        - Agent
+      summary: Delete an agent
+      operationId: deleteAgent
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The deleted agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResource'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed. Resource is changed in the background.
+        428:
+          description: Precondition Required.
+  /datapointmappings:
+    get:
+      tags:
+        - DataPointMapping
+      summary: List all data point mappings
+      operationId: listDataPointMappings
+      parameters:
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria.
+            Data point mapping supports the following filter fields:
+            - agentId
+            - thingId
+            - propertySetName
+            - propertyName
+          schema:
+            type: string
+      responses:
+        200:
+          description: Array of agents matched the tenant scope and filter criterias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataPointMappingArray'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+    post:
+      tags:
+        - DataPointMapping
+      summary: Create a data point mapping
+      operationId: createDataPointMapping
+      requestBody:
+        description: data point mapping
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataPointMapping'
+        required: true
+      responses:
+        201:
+          description: The data point mapping has been created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataPointMapping'
+        400:
+          description: Invalid Request.
+        500:
+          description: Internal Server Error.
+  /datapointmappings/{id}:
+    get:
+      tags:
+        - DataPointMapping
+      summary: Read a data point mapping
+      operationId: getDataPointMapping
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+      responses:
+        200:
+          description: The data point mapping
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataPointMapping'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+    delete:
+      tags:
+        - DataPointMapping
+      summary: Delete a data point mapping
+      operationId: deleteDataPointMapping
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[0-9A-F]{32}'
+            type: string
+      responses:
+        200:
+          description: The data point mapping
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataPointMapping'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+components:
+  schemas:
+    ThingType:
+      allOf:
+        - $ref: '#/components/schemas/ThingTypeCommon'
+        - type: object
+          properties:
+            propertysets:
+              type: array
+              items:
+                type: object
+                allOf:
+                  - type: object
+                    properties:
+                      name:
+                        maxLength: 64
+                        pattern: ^[^\s\.\\\/\?](?!.*[\.\\\/\?]).*(?<![\s\.\\\/\?])$
+                        type: string
+                        description: Name of the propertyset. It has to be unique inside
+                          the type-family (ancestors and descendants).Cannot be changed.
+                          Reserved words (id, name, description, tenant, etag, scope,
+                          properties, propertySets, extends, variables, aspects, parentTypeId)
+                          cannot be used as propertyset names.
+                        example: 峨眉山会议室温湿度
+                      propertySetTypeId:
+                        maxLength: 80
+                        type: string
+                        description: id of propertysettype created before. If any, the
+                          following feild (`propertySetType`) should be ignored.
+                        example: main.温湿度传感器
+                      propertySetType:
+                        $ref: '#/components/schemas/PropertySetTypeCommon'
+    ThingTypeCommon:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 128
+          minLength: 1
+          pattern: ^[^\s\.\\\/\?](?!.*[\.\\\/\?]).*(?<![\s\.\\\/\?])$
+          type: string
+          description: The type's name.
+          example: 区域
+        description:
+          maxLength: 255
+          type: string
+          description: Description.
+          example: 这是区域的模板
+        parentTypeId:
+          maxLength: 128
+          minLength: 1
+          pattern: '[a-z0-9]+'
+          type: string
+          description: The thign type's id is a unique identifier. Once set cannot
+            be changed.
+        instantiable:
+          type: boolean
+          description: If instances can be created from this type. A non-instantiable
+            type could be changed to be instantiable but not the other way around.
+          example: true
+          default: true
+        characteristics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Characteristic'
+    ThingTypeResource:
+      allOf:
+        - type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/ThingTypeId'
+            tenant:
+              maxLength: 16
+              minLength: 1
+              type: string
+              description: Your tanant id. It is "main" on the edge side.
+              example: main
+            eTag:
+              $ref: '#/components/schemas/ETag'
+        - $ref: '#/components/schemas/ThingTypeCommon'
+        - type: object
+          properties:
+            propertysets:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Name of property set type, it must be unique for the
+                      thing.
+                    example: 峨眉山会议室温湿度
+                  propertySetType:
+                    type: object
+                    allOf:
+                      - $ref: '#/components/schemas/PropertySetType'
+    CharacteristicCommon:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s\.\\\/](?!.*[\.\\\/]).*(?<![\s\.\\\/])$
+          type: string
+          description: The characteristic's name. Can NOT be changed.
+          example: 长
+        datatype:
+          type: string
+          description: Data type of the characteristic. Cannot be changed.
+          example: string
+          default: string
+          enum:
+            - string
+            - int
+            - long
+            - double
+            - bool
+        unit:
+          maxLength: 32
+          pattern: '[^\'']*'
+          type: string
+          description: Unit of measurement.
+          example: 米
+        length:
+          maximum: 255
+          minimum: 1
+          type: integer
+          description: The max length of the characteristic's value. The length field
+            is only used for characteristics of string datatype. It can only be increasedand cannot be decreased.
+          example: 5
+        searchable:
+          type: boolean
+          description: Indicates whether sorting and filtering is allowed on this
+            characteristic. Cannot be changed.
+          example: true
+          default: false
+    Characteristic:
+      allOf:
+        - $ref: '#/components/schemas/CharacteristicCommon'
+        - type: object
+          properties:
+            defaultValue:
+              type: string
+              description: The default value of the characteristic. It must be compatible
+                with the datatype! The default value will be inherited by the thing
+                type's child types and by the thing instantiating it.
+              example: "10"
+    CharacteristicThing:
+      allOf:
+        - $ref: '#/components/schemas/CharacteristicCommon'
+        - type: object
+          properties:
+            value:
+              type: string
+              description: Value of the characteristic.
+              example: "16"
+    Property:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s\.\\\/](?!.*[\.\\\/]).*(?<![\s\.\\\/])$
+          type: string
+          description: The property's name. Can NOT be changed.
+          example: 温度
+        datatype:
+          type: string
+          description: Datatype of the property. Cannot be changed.
+          example: double
+          default: string
+          enum:
+            - string
+            - int
+            - long
+            - double
+            - bool
+        unit:
+          maxLength: 32
+          pattern: '[^\'']*'
+          type: string
+          description: Unit of measurement. Can NOT be changed.
+          example: 摄氏度
+        length:
+          maximum: 255
+          minimum: 1
+          type: integer
+          description: The max length of the property's value. The length field is
+            only used for variables of string datatype. Cannot be changed.
+        accessMode:
+          type: string
+          description: Default is `r`. If it is `rw`, it shall generate a new action.
+            For more information, please see Control Manager API.
+          example: rw
+          default: r
+          enum:
+            - r
+            - rw
+        min:
+          type: number
+          description: |
+            It is active when `accessMode` is `rw`. </br>
+
+            Beginning of the value for numerical datatype (inclusive). </br>
+
+            For `int` or `long`, if you provide a double value, it shall be converted to an int by simply down-casting e.g. 6.7 will give you int 6.
+          example: 18.0
+        max:
+          type: number
+          description: |
+            It is active when `accessMode` is `rw`. </br>
+
+            End of the value for numerical datatype (inclusive). </br>
+
+            For `int` or `long`, if you provide a double value, it shall be converted to an int by simply down-casting e.g. 6.7 will give you int 6.
+          example: 32.0
+    PropertySetType:
+      allOf:
+        - type: object
+          properties:
+            name:
+              maxLength: 64
+              minLength: 1
+              pattern: ^[^\s\.\\\/\?](?!.*[\.\\\/\?]).*(?<![\s\.\\\/\?])$
+              type: string
+              description: Name of the property set type. It has to be unique inside
+                the tenant and can NOT be changed later.
+              example: 温湿度传感器
+            tenant:
+              maxLength: 16
+              minLength: 1
+              type: string
+              description: Your tanant id. It is "main" on the edge side.
+              readOnly: true
+              example: main
+            eTag:
+              type: integer
+              description: incremental counter for optimistic locking
+              readOnly: true
+              example: 1
+        - $ref: '#/components/schemas/PropertySetTypeCommon'
+    PropertySetTypeCommon:
+      type: object
+      properties:
+        id:
+          maxLength: 80
+          type: string
+          description: Default id is generated UUID. If id is provided then it has
+            to be prefixed with the current tenant and has to be followed by a dot.
+          readOnly: true
+          example: main.温湿度传感器
+        description:
+          maxLength: 255
+          type: string
+          description: The description of the property set type.
+          example: DH11温湿度传感器
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/Property'
+    ThingTypeId:
+      maxLength: 80
+      minLength: 1
+      pattern: '[a-z0-9]+'
+      type: string
+      description: The thing type's id is a unique identifier. Once set cannot be
+        changed.
+      example: main.区域
+    AgentTypeId:
+      maxLength: 80
+      minLength: 1
+      pattern: '[a-z0-9]+'
+      type: string
+      description: The agent type's id is a unique identifier. Once set cannot be
+        changed.
+      example: main.格创网关
+    ThingTypeResourceArray:
+      type: object
+      properties:
+        thingTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThingTypeResource'
+    ETag:
+      type: integer
+      description: incremental counter for optimistic locking
+      example: 1
+    UniqueId:
+      maxLength: 32
+      minLength: 32
+      pattern: '[0-9a-f]+'
+      type: string
+      example: 741a14d10ff44461bb269a8a58ec8ea7
+    timezone:
+      maxLength: 255
+      type: string
+      description: The timezone to be used for timeseries aggregation. By default
+        it is inherited from the tenant's defaultTimezone, but can be overwritten
+        only during thing creation. The timezone value should be set to a Java time
+        zone ID such as "Europe/Berlin" or "Etc/GMT+2". Time zones that 15 or 45 minutes
+        off a UTC hour are not supported, such as Nepal standard time (UTC+05:45).
+        Time zones that are 30 minutes off a UTC hour are supported, such as India
+        (UTC+05:30). Once an thing is created with a specific timezone, it cannot
+        be changed later.
+      example: Asia/Shanghai
+      default: Asia/Shanghai
+    Thing:
+      required:
+        - name
+        - typeId
+      type: object
+      properties:
+        name:
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s\\\/](?!.*[\\\/]).*(?<![\s\\\/])$
+          type: string
+          description: Name of the thing
+          example: 峨眉山会议室
+        description:
+          maxLength: 255
+          type: string
+          description: The description of the thing
+          example: TCL通讯成都会议室
+        typeId:
+          $ref: '#/components/schemas/ThingTypeId'
+        parentId:
+          $ref: '#/components/schemas/UniqueId'
+        timeZone:
+          $ref: '#/components/schemas/timezone'
+        characteristics:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                maxLength: 64
+                minLength: 1
+                pattern: ^[^\s\\\/](?!.*[\\\/]).*(?<![\s\\\/])$
+                type: string
+                example: 长
+              value:
+                maxLength: 255
+                minLength: 1
+                type: string
+                example: "20"
+    ThingResource:
+      allOf:
+        - type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/UniqueId'
+            tenant:
+              maxLength: 16
+              minLength: 1
+              type: string
+              description: Your tanant id. It is "main" on the edge side.
+              example: main
+            eTag:
+              $ref: '#/components/schemas/ETag'
+        - $ref: '#/components/schemas/Thing'
+    ThingResourceArray:
+      type: object
+      properties:
+        things:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThingResource'
+    CustomData:
+      type: object
+      additionalProperties:
+        maxLength: 1024
+        type: string
+      description: A list of string tuples.
+      example:
+        host: 10.125.10.101
+    DataPoint:
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          maxLength: 36
+          minLength: 1
+          pattern: ^[^\s\\\/](?!.*[\\\/]).*(?<![\s\\\/])$
+          type: string
+          description: Identifier of this data point. Agents expected to upload timeseries
+            value with this id, enabling backend services to match data with this
+            data point. This is NOT an auto generated field, enabling agents to specify
+            it before uploading matching timeseries value.
+          example: analog001
+        name:
+          maxLength: 36
+          minLength: 1
+          pattern: ^[^\s\\\/](?!.*[\\\/]).*(?<![\s\\\/])$
+          type: string
+          description: The data point's name.
+          example: 温度
+        description:
+          maxLength: 255
+          type: string
+          description: The data point description information.
+          example: 读取温度
+        datatype:
+          type: string
+          description: Data type of the datapoint.
+          example: double
+          default: string
+          enum:
+            - string
+            - int
+            - long
+            - double
+            - bool
+        unit:
+          maxLength: 32
+          pattern: '[^\'']*'
+          type: string
+          description: Unit of measurement.
+          example: 摄氏度
+        accessMode:
+          type: string
+          description: Default is `r`. If it is `rw`, it shall generate a new action.
+            For more information, please see Control Manager API.
+          example: rw
+          default: r
+          enum:
+            - r
+            - rw
+        customData:
+          $ref: '#/components/schemas/CustomData'
+    DataSource:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s\\\/](?!.*[\\\/]).*(?<![\s\\\/])$
+          type: string
+          description: The data source's name. It has to be unique inside the agent
+            or the agent type.
+          example: DHT11温度传感器
+        description:
+          maxLength: 255
+          type: string
+          description: The data source's description info.
+          example: 在峨眉山会议室的DHT11温度传感器
+        dataPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPoint'
+        customData:
+          $ref: '#/components/schemas/CustomData'
+    AgentType:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s\.\\\/\?](?!.*[\.\\\/\?]).*(?<![\s\.\\\/\?])$
+          type: string
+          description: The agent type's name.
+          example: 格创网关
+        description:
+          maxLength: 255
+          type: string
+          description: The agent type's description info.
+          example: 格创网关的配置模板
+        dataSources:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataSource'
+    AgentTypeResource:
+      allOf:
+        - type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/AgentTypeId'
+            tenant:
+              maxLength: 16
+              minLength: 1
+              type: string
+              description: Your tanant id. It is "main" on the edge side.
+              example: main
+            eTag:
+              $ref: '#/components/schemas/ETag'
+        - $ref: '#/components/schemas/AgentType'
+    AgentTypeResourceArray:
+      type: object
+      properties:
+        agentTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentTypeResource'
+    Agent:
+      required:
+        - name
+        - thingId
+      type: object
+      properties:
+        thingId:
+          $ref: '#/components/schemas/UniqueId'
+        name:
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s\\\/](?!.*[\\\/]).*(?<![\s\\\/])$
+          type: string
+          description: The name of agent
+          example: 格创网关
+        description:
+          maxLength: 255
+          type: string
+          description: The description of agent
+          example: 格创网关模板生成
+        typeId:
+          maxLength: 80
+          minLength: 1
+          pattern: '[a-z0-9]+'
+          type: string
+          description: id of agent type created before. If any, the following field
+            (`dataSources`) should be ignored. Can NOT be changed. <br>
+            
+            If `typeId` appears, the agent is a copy of the agent type. The changes of the agent type shall not be propagated to the agent.
+          example: main.格创网关
+        dataSources:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataSourceResource'
+    DataSourceResource:
+      allOf:
+        - type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/UniqueId'
+        - $ref: '#/components/schemas/DataSource'
+    AgentResource:
+      allOf:
+        - type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/UniqueId'
+            eTag:
+              $ref: '#/components/schemas/ETag'
+        - $ref: '#/components/schemas/Agent'
+        - type: object
+          properties:
+            dataSources:
+              type: array
+              items:
+                $ref: '#/components/schemas/DataSourceResource'
+    AgentResourceArray:
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentResource'
+    DataPointMapping:
+      required:
+        - agentId
+        - dataPointId
+        - dataSourceId
+        - propertyName
+        - thingId
+      type: object
+      properties:
+        id:
+          maxLength: 32
+          type: string
+          description: Unique identifier of the mapping resource
+          format: uuid
+          readOnly: true
+        agentId:
+          maxLength: 32
+          type: string
+          description: Unique identifier of the agent
+          format: uuid
+        dataSourceId:
+          maxLength: 32
+          type: string
+          description: Unique identifier of the data source
+          format: uuid
+        dataPointId:
+          maxLength: 32
+          type: string
+          description: Unique identifier of the data point
+          example: analog001
+        dataPointUnit:
+          maxLength: 32
+          type: string
+          description: Unit of the data point
+          readOnly: true
+          example: 摄氏度
+        dataPointType:
+          type: string
+          description: Type of the data point
+          readOnly: true
+          example: double
+          enum:
+            - string
+            - int
+            - long
+            - double
+            - bool
+        thingId:
+          maxLength: 32
+          type: string
+          description: Unique identifier of the thing
+          format: uuid
+        thingName:
+          maxLength: 64
+          type: string
+          readOnly: true
+          example: 峨眉山会议室
+        propertySetName:
+          maxLength: 64
+          type: string
+          example: 峨眉山会议室温湿度
+        propertyName:
+          maxLength: 64
+          type: string
+          example: 温度
+        propertyUnit:
+          maxLength: 32
+          type: string
+          readOnly: true
+          example: 摄氏度
+        propertyType:
+          type: string
+          readOnly: true
+          example: double
+          enum:
+            - string
+            - int
+            - long
+            - double
+            - bool
+    DataPointMappingArray:
+      type: object
+      properties:
+        dataPointMappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPointMapping'
+    jsonPatch:
+      type: array
+      items:
+        type: object
+        properties:
+          op:
+            type: string
+            example: replace
+            enum:
+              - add
+              - remove
+              - replace
+              - move
+              - copy
+          path:
+            type: string
+            example: /characteristics/0/value
+          value:
+            type: string
+            example: 20
+  parameters:
+    ThingId:
+      name: id
+      in: path
+      description: The thing's id is a unique identifier.
+      required: true
+      schema:
+        maxLength: 32
+        minLength: 32
+        pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+        type: string
+    TypeId:
+      name: id
+      in: path
+      description: The type's id is a unique identifier.
+      required: true
+      schema:
+        maxLength: 80
+        minLength: 1
+        pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+        type: string
+    uniqueId:
+      name: id
+      in: path
+      description: Unique identifier
+      required: true
+      schema:
+        maxLength: 32
+        minLength: 32
+        pattern: '[0-9A-F]{32}'
+        type: string
+    page:
+      name: page
+      in: query
+      description: Specifies the requested page index
+      schema:
+        type: integer
+    size:
+      name: size
+      in: query
+      description: Specifies the number of elements in a page
+      schema:
+        type: integer
+    sort:
+      name: sort
+      in: query
+      description: Specifies the ordering of returned elements
+      schema:
+        type: string
+    filter:
+      name: filter
+      in: query
+      description: Specifies the additional filtering criteria
+      schema:
+        type: string
+    ifNoneMatch:
+      name: If-None-Match
+      in: header
+      description: ETag hash of previous request to allow caching
+      schema:
+        type: string
+    ifNoneMatchStar:
+      name: If-None-Match
+      in: header
+      description: Set ifNoneMatch header to "*" for ensuring create request
+      schema:
+        type: string
+    ifMatch:
+      name: If-Match
+      in: header
+      description: |
+        Last known version to facilitate optimistic locking.
+        *Required for modification.
+      schema:
+        type: string
+    ifMatchMandatory:
+      name: If-Match
+      in: header
+      description: Last known version to facilitate optimistic locking
+      required: true
+      schema:
+        type: string
+    ifMatchVariable:
+      name: If-Match
+      in: header
+      description: Last known version of thing type to facilitate optimistic locking.
+        Etag from thing type response to be used.
+      required: true
+      schema:
+        type: string
+    exploded:
+      name: exploded
+      in: query
+      description: Specifies if the thing type should include all of it's inherited
+        characteristics and properties. Default is false.
+      schema:
+        type: boolean
+        default: false

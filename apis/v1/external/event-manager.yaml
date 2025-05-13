@@ -1,0 +1,640 @@
+openapi: 3.0.1
+info:
+  title: Event Manager API
+  description: API defining resources and operations for configuring, reading and
+    managing events and event types.
+  version: 1.6.0
+servers:
+  - url: /api/event/v1
+tags:
+  - name: EventType
+    description: Managing event types
+  - name: Event
+    description: Managing events
+paths:
+  /eventtypes:
+    post:
+      tags:
+        - EventType
+      summary: Create an event type
+      operationId: createEventType
+      requestBody:
+        description: eventtype
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventType'
+        required: true
+      responses:
+        201:
+          description: The event type has been created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        400:
+          description: Invalid request.
+        500:
+          description: Internal Server Error.
+      x-codegen-request-body-name: eventtype
+    get:
+      tags:
+        - EventType
+      summary: List all event types
+      operationId: listEventTypes
+      parameters:
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria.
+
+            Event type supports the following filter fields:
+
+            - id
+            - name
+
+            For **name**, except normal json format, the following functions are supported: `eq`, `in`, `contains`, `startsWith` and `endsWith`.
+
+            For example:
+
+            ```
+            {"name": "agentEvent"}
+            ```
+
+            ```
+            {"name": {"eq": "agentEvent"}}
+            ```
+          schema:
+            type: string
+      responses:
+        200:
+          description: Array of event types matched the tenant scope and filter criterias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventTypes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventType'
+        400:
+          description: Invalid request.
+        500:
+          description: Internal Server Error.
+  /eventtypes/{id}:
+    get:
+      tags:
+        - EventType
+      summary: Read an event type
+      operationId: getEventType
+      parameters:
+        - name: id
+          in: path
+          description: The resource id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+        - name: exploded
+          in: query
+          description: Specifies if the event type should include all of it's inherited
+            event types.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: The event type
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        404:
+          description: Not Found.
+        500:
+          description: Internal Server Error.
+    patch:
+      tags:
+        - EventType
+      summary: Patch an event type
+      description: Patch the event type with the provided content. Conforms to RFC 7396
+        - JSON merge Patch and RFC 6902 - JSON Patch.
+      operationId: patchEventType
+      parameters:
+        - name: id
+          in: path
+          description: The resource id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/jsonPatch'
+          application/merge-patch+json:
+            schema:
+              type: object
+              example: {
+                "ttl": 106751,
+                "fields": [
+                  {
+                    "name": "温度",
+                    "filterable": false,
+                    "required": false,
+                    "updatable": true,
+                    "datatype": "double",
+                    "values": [
+                        "string"
+                    ]
+                  }
+                ]
+              }
+        required: true
+      responses:
+        200:
+          description: The patched event type
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+        428:
+          description: Precondition Required.
+        500:
+          description: Internal Server Error.
+    delete:
+      tags:
+        - EventType
+      summary: Delete an event type and delete all events belonging to the event type
+      operationId: deleteEventType
+      parameters:
+        - name: id
+          in: path
+          description: The resource id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The deleted event type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed. Resource is changed in the background.
+        428:
+          description: Precondition Required.
+  /events:
+    post:
+      tags:
+        - Event
+      summary: Create an event
+      operationId: createEvent
+      requestBody:
+        description: event
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomEvent'
+        required: true
+      responses:
+        202:
+          description: Accepted.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+        400:
+          description: Invalid request.
+      x-codegen-request-body-name: event
+    get:
+      tags:
+        - Event
+      summary: List all events
+      operationId: listEvents
+      parameters:
+        - name: start
+          in: query
+          description: Beginning of the time range to be read (inclusive).
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          description: End of the time range to be read (exclusive).
+          schema:
+            type: string
+            format: date-time
+        - name: filter
+          in: query
+          description: |-
+            Specifies the additional filtering criteria.
+
+            Event supports the following filter fields:
+
+            - id
+            - typeId
+            - correlationId
+            - thingId
+            - all filterable fields defined in event type
+          schema:
+            type: string
+        - name: select
+          in: query
+          description: Comma-separated list of fields to be returned. By default all
+            fields of an event are considered.
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Order in which events are returned. Supported only on filterable
+            fields. Default is `_time` descending order.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of time series data items to be retrieved.
+          schema:
+            type: integer
+            default: 2000
+        - name: latest
+          in: query
+          description: If true, only the latest value of each event is returned. Latest
+            values must be at least 1 second old and at maximum 7 days old, in order
+            to be considered. The select parameter can be used to limit the properties
+            to be considered. Parameters start, end, and limit must not be used in conjunction
+            with latest.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Array of events matched the tenant scope and filter criterias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CustomEvent'
+        400:
+          description: Invalid request.
+  /events/{id}:
+    get:
+      tags:
+        - Event
+      summary: Read an event
+      operationId: getEvent
+      parameters:
+        - name: id
+          in: path
+          description: The resource id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+        - name: If-None-Match
+          in: header
+          description: ETag hash of previous request to allow caching.
+          schema:
+            type: string
+        - name: thingId
+          in: query
+          description: Thing Id of the event. It is not necessary. You will get better
+            performance if thingId is specified.
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+        - name: typeId
+          in: query
+          description: Type Id of the event.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+            default: main.StandardEvent
+      responses:
+        200:
+          description: The event
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomEvent'
+    delete:
+      tags:
+        - Event
+      summary: Delete an event
+      operationId: deleteEvent
+      parameters:
+        - name: id
+          in: path
+          description: The resource id is a unique identifier.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+        - name: typeId
+          in: query
+          description: Type Id of the event.
+          required: true
+          schema:
+            maxLength: 80
+            minLength: 1
+            pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+            type: string
+            default: main.StandardEvent
+      responses:
+        202:
+          description: Accepted.
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed. Resource is changed in the background.
+        428:
+          description: Precondition Required.
+components:
+  schemas:
+    EventType:
+      required:
+        - fields
+        - name
+      type: object
+      properties:
+        id:
+          maxLength: 80
+          type: string
+          description: If id is provided then it has to be prefixed with the current
+            tenant and has to be followed by a dot. Can NOT be changed.
+          example: main.AgentEvent
+        name:
+          maxLength: 64
+          type: string
+          description: Name of the event type. Can NOT be changed.
+        parentId:
+          maxLength: 80
+          minLength: 1
+          type: string
+          description: Parent event type id. Can NOT be changed.
+          default: main.BaseEvent
+        ttl:
+          maximum: 106751
+          minimum: 0
+          type: integer
+          description: Time to live in days.
+        tenant:
+          maxLength: 16
+          type: string
+          description: The tenant who owns the event type. Can NOT be changed.
+          readOnly: true
+          default: main
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+    Field:
+      required:
+        - datatype
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 64
+          type: string
+          description: Name of the field. Can NOT be changed.
+          example: 温度
+        filterable:
+          type: boolean
+          default: false
+          description: Can NOT be changed.
+        required:
+          type: boolean
+          default: false
+        updatable:
+          type: boolean
+          example: true
+          default: false
+        datatype:
+          type: string
+          description: |-
+            The 'link' type is not a plain HREF. The value for the
+            link type should be given between quotation marks. Can NOT be changed.
+          example: double
+          enum:
+            - string
+            - int
+            - double
+            - bool
+            - link
+            - timestamp
+            - uuid
+            - enum
+            - map
+        values:
+          type: array
+          description: |-
+            This field is applicable only if the field's datatype is enum or map, otherwise it should be skipped.
+
+            - For `enum`, the init value is 0 and step is 1. The values must be strings.
+            - For `map`, the key only can be integer and value be string.
+          items:
+            type: string
+    BaseEvent:
+      required:
+        - _time
+        - thingId
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique idendifier of the event.
+          format: uuid
+          readOnly: true
+        typeId:
+          type: string
+          description: Unique identifier of the event type (filterable, can not be changed)
+          default: main.StandardEvent
+        correlationId:
+          type: string
+          description: Correlation ID of the event. It can be used to group related
+            events (filterable, can not be changed)
+          format: uuid
+        _time:
+          type: string
+          description: Timestamp attached to the event in UTC format (filterable,
+            can not be changed)
+          format: date-time
+        thingId:
+          type: string
+          description: Thing attached to the event (filterable, can not be changed)
+          format: uuid
+        eTag:
+          type: integer
+          description: Incremental counter for optimistic concurrency control.
+          format: int64
+          readOnly: true
+          example: 0
+    StandardEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            severity:
+              maximum: 99
+              minimum: 1
+              type: integer
+            description:
+              maxLength: 255
+              type: string
+            code:
+              maxLength: 16
+              type: string
+            source:
+              maxLength: 255
+              type: string
+            acknowledged:
+              type: boolean
+              default: false
+    CustomEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          additionalProperties:
+            type: string
+            description: A custom field. An event can have multiple custom fields according
+              to its event type.
+    jsonPatch:
+      type: array
+      items:
+        type: object
+        properties:
+          op:
+            type: string
+            example: replace
+            enum:
+              - add
+              - remove
+              - replace
+              - move
+              - copy
+          path:
+            type: string
+            example: /fields/0/required
+          value:
+            type: boolean
+            example: true
+  parameters:
+    thingId:
+      name: thingId
+      in: query
+      description: Thing Id of the event. It is not necessary. You will get better
+        performance if thingId is specified.
+      schema:
+        maxLength: 32
+        minLength: 32
+        pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+        type: string
+    typeId:
+      name: typeId
+      in: query
+      description: Type Id of the event.
+      required: true
+      schema:
+        maxLength: 80
+        minLength: 1
+        pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+        type: string
+        default: main.StandardEvent
+    uniqueId:
+      name: id
+      in: path
+      description: The resource id is a unique identifier.
+      required: true
+      schema:
+        maxLength: 80
+        minLength: 1
+        pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+        type: string
+    ifMatchMandatory:
+      name: If-Match
+      in: header
+      description: Last known version to facilitate optimistic locking
+      required: true
+      schema:
+        type: string
+    ifNoneMatch:
+      name: If-None-Match
+      in: header
+      description: ETag hash of previous request to allow caching.
+      schema:
+        type: string

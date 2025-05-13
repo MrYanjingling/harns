@@ -1,0 +1,350 @@
+swagger: "2.0"
+info:
+  description: >-
+
+    API defining resources and operations for installations.
+
+  version: "1.6.0"
+  title: "Installation Manager API"
+basePath: "/api/installation/v1"
+tags:
+  - name: Installations
+    description: Managing installations
+schemes:
+  - http
+  - https
+paths:
+  '/installations':
+    post:
+      tags:
+        - Installations
+      summary: Creat an installation
+      operationId: createInstallation
+      produces:
+        - "application/json"
+      consumes:
+        - "application/json"
+      parameters:
+        - in: body
+          name: installation
+          description: installation
+          required: true
+          schema:
+            $ref: '#/definitions/InstallationReq'
+      responses:
+        "201":
+          description: The installation has been created.
+          schema:
+            $ref: '#/definitions/Installation'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - Installations
+      summary: List installations
+      operationId: listInstallations
+      produces:
+        - "application/json"
+      parameters:
+        - name: filter
+          in: query
+          type: string
+          description: >-
+            Specifies the additional filtering criteria.
+
+            it supports the following filter fields:
+
+            - type
+
+
+            For example:
+
+            ```
+            {"type": "ui"}
+            ```
+      responses:
+        '200':
+          description: Array of installations
+          schema:
+            type: object
+            properties:
+              installations:
+                type: array
+                items:
+                  $ref: '#/definitions/Installation'
+        '400':
+          description: Invalid request.
+  '/installations/{id}':
+    delete:
+      tags:
+        - Installations
+      summary: Delete an installation
+      operationId: deleteInstallation
+      produces:
+        - "application/json"
+      parameters:
+        - in: path
+          name: id
+          type: string
+          required: true
+      responses:
+        "200":
+          description: The installation has been deleted.
+          schema:
+            $ref: '#/definitions/Installation'
+        "400":
+          description: Invalid request.
+        "404":
+          description: There is no installation with given installation id.
+  '/installations/{id}/images':
+    put:
+      tags:
+        - Installations
+      summary: Upload installation's image
+      operationId: uploadInstallationImage
+      consumes:
+        - "multipart/form-data"
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Installation Id
+          required: true
+        - name: name
+          in: query
+          type: string
+          description: Image name
+          required: true
+        - name: file
+          in: formData
+          type: file
+          description: The file to upload
+          required: true
+      responses:
+        '200':
+          description: ok
+        '400':
+          description: Invalid request.
+    get:
+      tags:
+        - Installations
+      summary: List installation's images
+      operationId: listInstallationImages
+      produces:
+        - "application/json"
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '200':
+          description: Array of images
+          schema:
+            type: object
+            properties:
+              images:
+                type: array
+                items:
+                  $ref: '#/definitions/Image'
+  '/installations/{id}/images/{name}/content':
+    get:
+      tags:
+        - Installations
+      summary: Download image content
+      operationId: getImageContent
+      produces:
+        - image/png
+        - image/gif
+        - image/jpeg
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Installation Id
+          required: true
+        - name: name
+          in: path
+          type: string
+          description: Image name
+          required: true
+      responses:
+        '200':
+          description: ok
+          schema:
+            type: file
+        '204':
+          description: No content.
+        '400':
+          description: Invalid request.
+  '/installations/{id}/images/{name}':
+    delete:
+      tags:
+        - Installations
+      summary: Delete image content
+      operationId: deleteImageContent
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Installation Id
+          required: true
+        - name: name
+          in: path
+          type: string
+          description: Image name
+          required: true
+      responses:
+        '204':
+          description: No content.
+        '400':
+          description: Invalid request.
+        "404":
+          description: Not Found.
+
+definitions:
+  InstallationBase:
+    type: object
+    required:
+      - name
+      - displayName
+      - version
+      - type
+      - start
+      - end
+    properties:
+      id:
+        type: string
+        description: Unique identifier of installation.
+        minLength: 32
+        maxLength: 32
+        example: "592a310fba6e4832854faad7633fba09"
+        format: uuid
+        readOnly: true
+      eTag:
+        type: string
+        description: ETag hash of the resource.
+        example: 0
+        readOnly: true
+      name:
+        type: string
+        description: Name of the installation. It should be unique for one tenant.
+        maxLength: 32
+        pattern: '[a-zA-Z0-9]+'
+        example: modelmanager
+      displayName:
+        type: string
+        description: Name displayed on launchpad.
+        maxLength: 16
+        example: 模型管理
+      providerId:
+        type: string
+        description: Tenant id who provide this installation.
+        maxLength: 16
+        default: main
+        example: main
+      version:
+        type: string
+        description: Version of this installation.
+        minLength: 2
+        maxLength: 4
+        example: v1
+      type:
+        type: string
+        description: Type of installation
+        enum:
+          - ui
+          - app
+          - api
+        example: ui
+      start:
+        type: string
+        description: Begin time the installation is active.
+        format: date-time
+      end:
+        type: string
+        description: End time the installation is active.
+        format: date-time
+      configuration:
+        type: object
+        properties:
+          roles:
+            type: array
+            items:
+              type: string
+              example: harns:main:modelmanager:admin
+        additionalProperties:
+          description: Properties as defined by the thing containing the time series data.
+  Installation:
+    type: object
+    allOf:
+      - $ref: '#/definitions/InstallationBase'
+      - properties:
+          components:
+            type: array
+            items:
+              $ref: '#/definitions/Component'
+          images:
+            type: object
+            readOnly: true
+            properties:
+              href:
+                type: string
+                format: uri
+                example: http://127.0.0.1/api/installation/v1/installations/592a310fba6e4832854faad7633fba09/images
+  Image:
+    type: object
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 64
+        example: ModelManager@2x.png
+      href:
+        type: string
+        format: uri
+        example: http://127.0.0.1/api/installation/v1/installations/592a310fba6e4832854faad7633fba09/images/ModelManager@2x.png/content
+  InstallationReq:
+    allOf:
+      - $ref: '#/definitions/InstallationBase'
+      - properties:
+          components:
+            type: array
+            items:
+              $ref: '#/definitions/Component'
+  Component:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Name of the component. It should be unique for the installation.
+        maxLength: 32
+        pattern: '[a-zA-Z0-9]+'
+        example: modelmanager
+      uri:
+        type: string
+        format: uri
+        example: https://model-manager.harns.svc.cluster.local
+      endpoints:
+        type: array
+        items:
+          properties:
+            path:
+              type: string
+              example: /
+            action:
+              type: string
+              enum:
+                - GET
+                - POST
+                - PUT
+                - PATCH
+                - DELETE
+                - HEAD
+                - CONNECT
+                - OPTIONS
+                - TRACE
+              example: GET
+            osBar:
+              type: boolean
+              description: Whether UI injects os-bar. API installation should ignore it.

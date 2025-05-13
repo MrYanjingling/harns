@@ -1,0 +1,933 @@
+swagger: "2.0"
+info:
+  description: "API defining resources and operations for configuring, reading and managing things, thing types, agents, agent types and data point mappings."
+  version: "0.0.3"
+  title: "Model Manager API"
+basePath: "/api/model/v1"
+tags:
+- name: ThingType
+  description: Managing thing types
+- name: Thing
+  description: Managing things
+- name: AgentType
+  description: Managing agent types
+- name: Agent
+  description: Managing agents
+- name: DataPointMapping
+  description: Managing data point mappins
+schemes:
+- http
+- https
+paths:
+  /thingtypes:
+    post:
+      tags:
+        - ThingType
+      summary: Create a thing type
+      operationId: createThingType
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: body
+          name: thingtype
+          description: thingtype
+          required: true
+          schema:
+            $ref: '#/definitions/ThingType'
+      responses:
+        "201":
+          description: The thing type has been created
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/ThingTypeResource'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - ThingType
+      summary: List all thing types
+      operationId: listThingTypes
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/filter'
+        - $ref: '#/parameters/exploded'
+      responses:
+        "200":
+          description: Array of thing types matched the tenant scope and filter criterias
+          schema:
+            $ref: '#/definitions/ThingTypeResourceArray'
+  '/thingtypes/{id}':
+    get:
+      tags:
+        - ThingType
+      summary: Read a thing type
+      operationId: getThingType
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/TypeId'
+        - $ref: '#/parameters/exploded'
+      responses:
+        "200":
+          description: The thing type
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/ThingTypeResource'
+  /things:
+    post:
+      tags:
+        - Thing
+      summary: Create a thing
+      operationId: createThing
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: body
+          name: thing
+          description: thing
+          required: true
+          schema:
+            $ref: '#/definitions/Thing'
+      responses:
+        "201":
+          description: The thing has been created
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/ThingResource'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - Thing
+      summary: List all things
+      operationId: listThings
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/filter'
+      responses:
+        "200":
+          description: Array of things matched the tenant scope and filter criterias
+          schema:
+            $ref: '#/definitions/ThingResourceArray'
+  '/things/{id}':
+    get:
+      tags:
+        - Thing
+      summary: Read a thing
+      operationId: getThing
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/TypeId'
+      responses:
+        "200":
+          description: The thing type
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/ThingResource'
+  /agenttypes:
+    post:
+      tags:
+        - AgentType
+      summary: Create an agent type
+      operationId: createAgentType
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: body
+          name: agenttype
+          description: agenttype
+          required: true
+          schema:
+            $ref: '#/definitions/AgentType'
+      responses:
+        "201":
+          description: The agent type has been created
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/AgentTypeResource'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - AgentType
+      summary: List all agent types
+      operationId: listAgentTypes
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/filter'
+      responses:
+        "200":
+          description: Array of agent types matched the tenant scope and filter criterias
+          schema:
+            $ref: '#/definitions/AgentTypeResourceArray'
+  '/agenttypes/{id}':
+    get:
+      tags:
+        - AgentType
+      summary: Read an agent type
+      operationId: getAgentType
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/TypeId'
+      responses:
+        "200":
+          description: The thing type
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/AgentTypeResource'
+  /agents:
+    post:
+      tags:
+        - Agent
+      summary: Create an agent
+      operationId: createAgent
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: body
+          name: agent
+          description: agent
+          required: true
+          schema:
+            $ref: '#/definitions/Agent'
+      responses:
+        "201":
+          description: The agent has been created
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/AgentResource'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - Agent
+      summary: List all agents
+      operationId: listAgents
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/filter'
+      responses:
+        "200":
+          description: Array of agents matched the tenant scope and filter criterias
+          schema:
+            $ref: '#/definitions/AgentResourceArray'
+  '/agents/{id}':
+    get:
+      tags:
+        - Agent
+      summary: Read an agent
+      operationId: getAgent
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/uniqueId'
+      responses:
+        "200":
+          description: The thing type
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/AgentResource'
+    put:
+      tags:
+        - Agent
+      summary: Update an agent
+      operationId: updateAgent
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/uniqueId'
+        - in: body
+          name: agent
+          description: agent
+          required: true
+          schema:
+            $ref: '#/definitions/Agent'
+      responses:
+        "200":
+          description: The agent has been updated
+          headers:
+            ETag:
+              type: string
+              description: ETag hash of the resource
+          schema:
+            $ref: '#/definitions/AgentResource'  
+  /datapointmappings:
+    post:
+      tags:
+        - DataPointMapping
+      summary: Create a data point mapping
+      operationId: createDataPointMapping
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: body
+          name: dataPointMapping
+          description: data point mapping
+          required: true
+          schema:
+            $ref: '#/definitions/DataPointMapping'
+      responses:
+        "201":
+          description: The data point mapping has been created
+          schema:
+            $ref: '#/definitions/DataPointMapping'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - DataPointMapping
+      summary: List all data point mappings
+      operationId: listDataPointMappings
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/filter'
+      responses:
+        "200":
+          description: Array of agents matched the tenant scope and filter criterias
+          schema:
+            $ref: '#/definitions/DataPointMappingArray'
+  '/datapointmappings/{id}':
+    get:
+      tags:
+        - DataPointMapping
+      summary: Read a data point mapping
+      operationId: getDataPointMapping
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/uniqueId'
+      responses:
+        "200":
+          description: The thing type
+          schema:
+            $ref: '#/definitions/DataPointMapping'
+    delete:
+      tags:
+        - DataPointMapping
+      summary: Delete a data point mapping
+      operationId: deleteDataPointMapping
+      produces:
+        - "application/json"
+      parameters:
+        - $ref: '#/parameters/uniqueId'
+      responses:
+        "204":
+          description: The thing type
+          schema:
+            $ref: '#/definitions/DataPointMapping'
+      
+      
+definitions:
+  ThingType:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: The type's name.
+        minLength: 1
+        maxLength: 128
+        pattern: '[\p{L}_0-9_\. ]+'
+        example: 区域
+      description:
+        type: string
+        description: Description.
+        maxLength: 256
+        example: 这是区域的模板
+      parentTypeId:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '[a-z0-9]+'
+        description: >-
+          The thign type's id is a unique identifier. Once set cannot be changed.
+      instantiable:
+        type: boolean
+        description: >-
+          If instances can be created from this type. A non-instantiable type
+          could be changed to be instantiable but not the other way around.
+        default: true
+        example: true
+      characteristics:
+        type: "array"
+        items:
+          $ref: '#/definitions/Characteristic'
+      properties:
+        type: "array"
+        items:
+          $ref: '#/definitions/Property'
+  Characteristic:
+    type: object
+    required:
+    - name
+    properties:
+      name:
+        type: string
+        description: The characteristic's name. Can NOT be changed.
+        minLength: 1
+        maxLength: 64
+        pattern: '[\p{L}_0-9_\. ]+'
+        example: 长
+      datatype:
+        type: string
+        description: Data type of the characteristic. Cannot be changed.
+        enum:
+          - string
+          - int32
+          - double
+          - bool
+        default: "string"
+        example: string
+      unit:
+        type: string
+        description: Unit of measurement. Can NOT be changed.
+        maxLength: 32
+        pattern: '[^\'']*'
+        example: 米
+      length:
+        type: integer
+        description: >-
+          The max length of the characteristic's value. The length field is only used
+          for variables of string datatype. Cannot be changed.
+        minimum: 1
+        maximum: 255
+        example: 5
+      defaultValue:
+        type: string
+        description: >-
+          The default value of the characteristic. It must be compatible with the
+          datatype! The default value will be inherited by the thing type's
+          child types and by the thing instantiating it.
+        example: 10
+      searchable:
+        type: boolean
+        description: >-
+          Indicates whether sorting and filtering is allowed on this characteristic.
+          Cannot be changed.
+        default: false
+        example: true
+  Property:
+    type: object
+    required:
+    - name
+    properties:
+      name:
+        type: string
+        description: The property's name. Can NOT be changed.
+        minLength: 1
+        maxLength: 64
+        pattern: '[\p{L}_0-9_\. ]+'
+        example: 温度
+      datatype:
+        type: string
+        description: Datatype of the property. Cannot be changed.
+        enum:
+          - string
+          - int32
+          - double
+          - bool
+        default: "string"
+        example: double
+      unit:
+        type: string
+        description: Unit of measurement. Can NOT be changed.
+        maxLength: 32
+        pattern: '[^\'']*'
+        example: 摄氏度
+      length:
+        type: integer
+        description: >-
+          The max length of the property's value. The length field is only used
+          for variables of string datatype. Cannot be changed.
+        minimum: 1
+        maximum: 255
+  ThingTypeResource:
+    type: object
+    allOf:
+      - properties:
+          id:
+            $ref: '#/definitions/ThingTypeId'
+          tenant:
+            type: string
+            description: Your tanant id. It is "main" on the edge side.
+            minLength: 1
+            maxLength: 15
+            pattern: '[\p{L}_0-9_\. ]+'
+            example: main
+          eTag:
+            $ref: '#/definitions/ETag'
+      - $ref: '#/definitions/ThingType'
+  ThingTypeId:
+    type: string
+    minLength: 1
+    maxLength: 128
+    pattern: '[a-z0-9]+'
+    description: >-
+      The thing type's id is a unique identifier. Once set cannot be changed.
+    example: main.区域
+  AgentTypeId:
+    type: string
+    minLength: 1
+    maxLength: 128
+    pattern: '[a-z0-9]+'
+    description: >-
+      The agent type's id is a unique identifier. Once set cannot be changed.
+    example: main.格创网关
+  ThingTypeResourceArray:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/ThingTypeResource'
+  ETag:
+    type: integer
+    description: incremental counter for optimistic locking
+    example: 1
+  UniqueId:
+    type: string
+    pattern: '[0-9a-f]+'
+    minLength: 32
+    maxLength: 32
+    example: c27a28b6eb16b507fabc11e75da8b4ce
+  timezone:
+    type: string
+    maxLength: 255
+    description: >-
+      The timezone to be used for timeseries aggregation. By default it is
+      inherited from the tenant's defaultTimezone, but can be overwritten only during thing creation. The
+      timezone value should be set to a Java time zone ID such as
+      "Europe/Berlin" or "Etc/GMT+2". Time zones that 15 or 45 minutes off
+      a UTC hour are not supported, such as Nepal standard time (UTC+05:45).
+      Time zones that are 30 minutes off a UTC hour are supported, such as India
+      (UTC+05:30). Once an thing is created with a specific timezone, it cannot be changed later.
+    default: Asia/Shanghai
+    example: Asia/Shanghai
+  Thing:
+    type: object
+    required:
+      - name
+      - typeId
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '[^\/\\]*'
+        description: Name of the thing
+        example: 峨眉山会议室
+      description:
+        type: string
+        description: The description of the thing
+        maxLength: 255
+        example: TCL通讯成都会议室
+      typeId:
+        $ref: '#/definitions/ThingTypeId'
+      parentId:
+        $ref: '#/definitions/UniqueId'
+      timeZone:
+        $ref: '#/definitions/timezone'
+      characteristics:
+        type: array
+        items:
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 64
+              pattern: '[a-zA-Z0-9_]+'
+              example: 长
+            value:
+              type: string
+              minLength: 1
+              maxLength: 255
+              example: 20
+  ThingResource:
+    type: object
+    allOf:
+      - properties:
+          id:
+            $ref: '#/definitions/UniqueId'
+          tenant:
+            type: string
+            description: Your tanant id. It is "main" on the edge side.
+            minLength: 1
+            maxLength: 15
+            pattern: '[\p{L}_0-9_\. ]+'
+            example: main
+          eTag:
+            $ref: '#/definitions/ETag'
+      - $ref: '#/definitions/Thing'
+  ThingResourceArray:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/ThingResource'
+  CustomData:
+    type: object
+    description: A list of string tuples.
+    additionalProperties:
+      type: string
+      maxLength: 1024
+    example: { "host": "10.125.10.101" }
+  DataPoint:
+    type: object
+    required:
+      - id
+      - name
+      - datatype
+      - unit
+    properties:
+      id:
+        type: string
+        description: >-
+          Identifier of this data point. Agents expected to upload timeseries value with this id, enabling backend services to match data with this data point. 
+          This is NOT an auto generated field, enabling agents to specify it before uploading matching timeseries value.
+        minLength: 1
+        maxLength: 36
+        example: analog001
+      name:
+        type: string
+        description: The data point's name. Can NOT be changed.
+        minLength: 1
+        maxLength: 36
+        pattern: '[\p{L}_0-9_\. ]+'
+        example: 温度
+      description:
+        type: string
+        description: The data point description information.
+        maxLength: 256
+        example: "读取温度"
+      datatype:
+        type: string
+        description: Data type of the characteristic. Cannot be changed.
+        enum:
+          - string
+          - int32
+          - double
+          - bool
+        default: "string"
+        example: double
+      unit:
+        type: string
+        description: Unit of measurement. Can NOT be changed.
+        maxLength: 32
+        pattern: '[^\'']*'
+        example: 摄氏度
+      customData:
+        $ref: '#/definitions/CustomData'
+  DataSource:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: The data source's name.
+        minLength: 1
+        maxLength: 64
+        example: DHT11温度传感器
+      description: 
+        type: string
+        description: The data source's description info.
+        maxLength: 256
+        example: 在峨眉山会议室的DHT11温度传感器
+      dataPoints:
+        type: array
+        items:
+          $ref: '#/definitions/DataPoint'
+      customData:
+        $ref: '#/definitions/CustomData'
+  AgentType:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: The agent type's name.
+        minLength: 1
+        maxLength: 128
+        example: 格创网关
+      description: 
+        type: string
+        description: The agent type's description info.
+        maxLength: 256
+        example: 格创网关的配置模板
+      dataSources:
+        type: array
+        items:
+          $ref: '#/definitions/DataSource'
+  AgentTypeResource:
+    type: object
+    allOf:
+      - properties:
+          id:
+            $ref: '#/definitions/AgentTypeId'
+          tenant:
+            type: string
+            description: Your tanant id. It is "main" on the edge side.
+            minLength: 1
+            maxLength: 15
+            pattern: '[\p{L}_0-9_\. ]+'
+            example: main
+          eTag:
+            $ref: '#/definitions/ETag'
+      - $ref: '#/definitions/AgentType'
+  AgentTypeResourceArray:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/AgentTypeResource'
+  Agent:
+    type: object
+    required:
+      - name
+      - typeId
+    properties:
+      name:
+        type: string
+        description: The name of agent
+        minLength: 1
+        maxLength: 128
+        example: 格创网关
+      description:
+        type: string
+        description: The description of agent
+        maxLength: 256 
+        example: 格创网关模板生成
+      typeId:
+        $ref: '#/definitions/AgentTypeId'
+  DataSourceResource:
+    type: object
+    allOf:
+      - properties:
+          id:
+            $ref: '#/definitions/UniqueId'
+      - $ref: '#/definitions/DataSource'
+  AgentResource:
+    type: object
+    allOf:
+      - properties:
+          id:
+            $ref: '#/definitions/UniqueId'
+      - $ref: '#/definitions/Agent'
+      - properties:
+          dataSources:
+            type: array
+            items:
+              $ref: '#/definitions/DataSourceResource'
+  AgentResourceArray:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/AgentResource'
+  DataPointMapping:
+    type: object
+    required:
+      - agentId
+      - dataSourceId
+      - dataPointId
+      - thingId
+      - propertyName
+    properties:
+      id:
+        type: string
+        description: Unique identifier of the mapping resource
+        format: uuid
+        maxLength: 32
+        readOnly: true
+        example: '4fad62585def4d84a4c21481b209c116'
+      agentId:
+        type: string
+        description: Unique identifier of the agent
+        format: uuid
+        maxLength: 32
+        example: '11961bc396cd4a87a9b26b723f5b7ba0'
+      dataSourceId:
+        type: string
+        description: Unique identifier of the data source
+        format: uuid
+        maxLength: 32
+        example: 'e31df33fce5a475fbe3df31baa5a1155'
+      dataPointId:
+        type: string
+        description: Unique identifier of the data point
+        example: 'analog001'
+        maxLength: 32
+      dataPointUnit:
+        type: string
+        description: Unit of the data point
+        readOnly: true
+        maxLength: 32
+        example: 摄氏度
+      dataPointType:
+        type: string
+        description: Type of the data point
+        readOnly: true
+        enum:
+          - string
+          - int32
+          - double
+          - bool
+        example: double
+      thingId:
+        type: string
+        description: Unique identifier of the entity
+        format: uuid
+        maxLength: 32
+        example: '83e78008eadf453bae4f5c7bef3db550'
+      thingName:
+        type: string
+        maxLength: 256
+        example: '峨眉山会议室'
+      propertyName:
+        type: string
+        example: "温度"
+        maxLength: 256
+      propertyUnit:
+        type: string
+        maxLength: 32
+        readOnly: true
+        example: 摄氏度
+      propertyType:
+        type: string
+        readOnly: true
+        enum:
+          - string
+          - int32
+          - double
+          - bool
+        example: double
+  DataPointMappingArray:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/DataPointMapping'
+
+parameters:
+  TypeId:
+    name: id
+    in: path
+    type: string
+    minLength: 1
+    maxLength: 128
+    required: true
+    pattern: '[A-Za-z0-9_]{1,8}\.[A-Za-z0-9_]+'
+    description: >-
+      The type's id is a unique identifier. 
+  uniqueId:
+    name: id
+    in: path
+    type: string
+    pattern: '[0-9A-F]{32}'
+    required: true
+    description: Unique identifier
+  page:
+    name: page
+    in: query
+    type: integer
+    description: Specifies the requested page index
+  size:
+    name: size
+    in: query
+    type: integer
+    description: Specifies the number of elements in a page
+  sort:
+    name: sort
+    in: query
+    type: string
+    description: Specifies the ordering of returned elements
+  filter:
+    name: filter
+    in: query
+    type: string
+    description: Specifies the additional filtering criteria
+  ifNoneMatch:
+    name: If-None-Match
+    in: header
+    type: string
+    description: ETag hash of previous request to allow caching
+  ifNoneMatchStar:
+    name: If-None-Match
+    in: header
+    type: string
+    description: Set ifNoneMatch header to "*" for ensuring create request
+  ifMatch:
+    name: If-Match
+    in: header
+    type: string
+    description: |
+      Last known version to facilitate optimistic locking.
+      *Required for modification.
+  ifMatchMandatory:
+    name: If-Match
+    in: header
+    type: string
+    required: true
+    description: Last known version to facilitate optimistic locking
+  ifMatchVariable:
+    name: If-Match
+    in: header
+    type: string
+    required: true
+    description: Last known version of asset type to facilitate optimistic locking. Etag from thing type response to be used.
+  exploded:
+    name: exploded
+    in: query
+    type: boolean
+    description: >-
+      Specifies if the thing type should include all of it's inherited characteristics
+      and properties. Default is false.

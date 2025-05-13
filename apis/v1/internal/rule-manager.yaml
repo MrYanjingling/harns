@@ -1,0 +1,486 @@
+openapi: 3.0.1
+info:
+  description: >-
+
+    Currently, we only support **Real Time Computing** rule.
+
+    ## Real Time Computing
+
+    If **real time computing** is required, the rule is only able to applied to only one property set of a thing. If the rule refers multiple properties of the same property set, you have to make sure that they all exists in the time series upload payload.
+
+    In other word, if the rule refers two different property set, Real Time Computing shall not be enabled.
+
+
+    ## Binary operators
+
+    The following operators are supported:
+
+    ### Arithmetic binary operators
+
+    - \+ (addition)
+
+    - \- (subtraction)
+
+    - \* (multiplication)
+
+    - / (division)
+
+    - % (modulo)
+
+    - ^ (power/exponentiation)
+
+    ### Comparison binary operators
+
+    - == (equal)
+
+    - != (not-equal)
+
+    - \> (greater-than)
+
+    - \< (less-than)
+
+    - \>= (greater-or-equal)
+
+    - <= (less-or-equal)
+
+    ### Logical/set binary operators
+
+    - and (intersection)
+
+    - or (union)
+
+    - unless (complement)
+
+    ## Aggregation operators
+
+    - sum (calculate sum over dimensions)
+
+    - min (select minimum over dimensions)
+
+    - max (select maximum over dimensions)
+
+    - avg (calculate the average over dimensions)
+
+    - count (count number of elements in the vector)
+
+    - count_values (count number of elements with the same value)
+
+
+  version: "1.6.0"
+  title: "Rule Manager API"
+servers:
+  - url: "/api/data/v1"
+tags:
+  - name: Rules
+    description: Managing rule
+paths:
+  '/rules':
+    post:
+      tags:
+        - Rules
+      summary: Create a rule
+      operationId: create rule
+      requestBody:
+        description: rule
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rule'
+        required: true
+      responses:
+        "201":
+          description: The rule has been created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+        "400":
+          description: Invalid request.
+    get:
+      tags:
+        - Rules
+      summary: List rules
+      operationId: listRules
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            type: string
+          description: >-
+            Specifies the additional filtering criteria.
+
+            It supports the following filter fields:
+
+            - thingId
+
+
+            For example:
+
+            ```
+            {"thingId": "741a14d10ff44461bb269a8a58ec8ea7"}
+            ```
+
+      responses:
+        '200':
+          description: array of rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Rule'
+        '400':
+          description: Invalid request.
+  /rules/{id}:
+    get:
+      tags:
+        - Rules
+      summary: Get rule by id
+      operationId: getRuleById
+      parameters:
+        - in: path
+          name: id
+          description: Unique identifier of rule.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The rule.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+        "204":
+          description: No content.
+        "400":
+          description: Invalid request.
+    patch:
+      tags:
+        - Rules
+      summary: Patch a Rule
+      description: Patch the Rule with the provided content. Conforms to RFC 7396 - JSON merge Patch and RFC 6902 - JSON Patch.
+      operationId: patchRule
+      parameters:
+        - name: id
+          in: path
+          description: Unique identifier
+          required: true
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: rule
+        content:
+          application/json-patch+json:
+            schema:
+              type: object
+              example:
+                [
+                  {
+                    "op": "replace",
+                    "path": "/name",
+                    "value": "摄氏度转成华氏度"
+                  },
+                  {
+                    "op": "replace",
+                    "path": "/thingId",
+                    "value": "139a1adcbbaa442ea9e06bdc6ff51241"
+                  }
+                ]
+          application/merge-patch+json:
+            schema:
+              type: object
+              example:
+                {
+                  "name":"摄氏度转成华氏度",
+                  "thingId":"139a1adcbbaa442ea9e06bdc6ff51241"
+                }
+        required: true
+      responses:
+        200:
+          description: The patched rule
+
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed.
+    delete:
+      tags:
+        - Rules
+      summary: Delete a Rule
+      operationId: deleteRule
+      parameters:
+        - in: path
+          name: id
+          description: Unique identifier of rule.
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: If-Match
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The deleted rule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+        "400":
+          description: Invalid Request.
+        "404":
+          description: Not Found.
+        "412":
+          description: Precondition Failed.
+        "428":
+          description: Precondition Required.
+        "500":
+          description: Internal Server Error.
+
+components:
+  schemas:
+    Rule:
+      type: object
+      required:
+        - name
+        - thingId
+        - expression
+      properties:
+        id:
+          type: string
+          description: Unique identifier of rule.
+          example: "vic678"
+          readOnly: true
+        eTag:
+          type: string
+          description: ETag hash of the resource.
+          example: "0"
+          readOnly: true
+        name:
+          type: string
+          description: Name of the rule.
+          maxLength: 64
+          example: 摄氏度转成华氏度
+        description:
+          type: string
+          maxLength: 255
+          example: 摄氏度转成华氏度
+        thingId:
+          type: string
+          description: Unique identifier of thing.
+          minLength: 32
+          maxLength: 32
+          example: 741a14d10ff44461bb269a8a58ec8ea7
+        tenant:
+          type: string
+          description: Your tanant id. It is "main" on the edge side.
+          example: main
+          readOnly: true
+        realTime:
+          type: boolean
+          description: Whether the rule is real time computing.
+          default: false
+          example: true
+        active:
+          type: boolean
+          description: Whether the rule is active or deactive.
+          default: false
+          example: true
+        evaluations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Evaluation"
+        actions:
+          type: object
+          properties:
+            virtualParameter:
+              type: object
+              required:
+                - thingId
+                - propertySetName
+                - property
+              properties:
+                active:
+                  type: boolean
+                  default: false
+                  example: true
+                thingId:
+                  type: string
+                  minLength: 32
+                  maxLength: 32
+                  example: 741a14d10ff44461bb269a8a58ec8ea7
+                propertySetName:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                  example: 温湿度传感器
+                property:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                      description: The property's name. Can NOT be changed.
+                      minLength: 1
+                      maxLength: 64
+                      pattern: '[\p{L}_0-9_\. ]+'
+                      example: 华氏度
+                    datatype:
+                      type: string
+                      description: Datatype of the property. Cannot be changed.
+                      enum:
+                        - string
+                        - int
+                        - long
+                        - double
+                        - bool
+                      default: "string"
+                      example: double
+                    unit:
+                      type: string
+                      description: Unit of measurement. Can NOT be changed.
+                      maxLength: 32
+                      pattern: '[^\'']*'
+                      example: °F
+                    length:
+                      type: integer
+                      description: >-
+                        The max length of the property's value. The length field is only used
+                        for variables of string datatype. Cannot be changed.
+                      minimum: 1
+                      maximum: 256
+            event:
+              type: object
+              required:
+                - severity
+              allOf:
+                - $ref: '#/components/schemas/ActionCommon'
+                - properties:
+                    severity:
+                      type: integer
+                      example: 50
+            email:
+              type: object
+              required:
+                - addresses
+              allOf:
+                - $ref: '#/components/schemas/ActionCommon'
+                - properties:
+                    addresses:
+                      type: array
+                      minLength: 1
+                      items:
+                        type: string
+                        format: email
+                    severity:
+                      type: integer
+                      example: 50
+            webhook:
+              type: object
+              required:
+                - addresses
+              allOf:
+                - $ref: '#/components/schemas/ActionCommon'
+                - properties:
+                    addresses:
+                      type: array
+                      minLength: 1
+                      items:
+                        type: string
+                        format: uri
+                        example: http://main-fleet.harns.cn/api/event/v1/events
+                    severity:
+                      type: integer
+                      example: 50
+            wecom:
+              type: object
+              required:
+                - addresses
+              allOf:
+                - $ref: '#/components/schemas/ActionCommon'
+                - properties:
+                    addresses:
+                      type: array
+                      minLength: 1
+                      items:
+                        type: string
+                        example: 格创东智（成都）科技有限公司
+                    severity:
+                      type: integer
+                      example: 50
+            wechat:
+              type: object
+              required:
+                - addresses
+              allOf:
+                - $ref: '#/components/schemas/ActionCommon'
+                - properties:
+                    addresses:
+                      type: array
+                      minLength: 1
+                      items:
+                        type: string
+                        example: 格创东智（成都）科技有限公司
+                    severity:
+                      type: integer
+                      example: 50
+    Evaluation:
+      type: object
+      required:
+        - template
+        - expression
+      properties:
+        template:
+          type: string
+          description: Template of mathematical expression.
+          example: "(x * 9) / 5 + 32"
+        expression:
+          type: string
+          description: Mathematical expression.
+          example: "(\u001D峨眉山会议室温湿度\u001F温度\u001D * 9) / 5 + 32"
+    ActionCommon:
+      type: object
+      required:
+        - description
+      properties:
+        active:
+          type: boolean
+          default: false
+          example: true
+        interval:
+          type: string
+          description: >
+            Duration between the same two actions. e.g. 6s, 6m, 6h. 0 is valid value.
+          default: 2m
+          example: 66s
+        description:
+          type: string
+          description: Description content.
+          minLength: 1
+          maxLength: 255
+          example: 峨眉山会议室温度过高

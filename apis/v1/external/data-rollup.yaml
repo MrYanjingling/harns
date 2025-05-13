@@ -1,0 +1,282 @@
+openapi: 3.0.1
+info:
+  title: Data Rollup API
+  description: |2-
+
+    Data Rollup API provides the functionality to query rolled up and pre-aggregated time series data.
+
+    The **all time zones** are supported, e.g. "Asia/Kolkata" (India, +05:30) and "Asia/Kathmandu" (Nepal, +05:45). The **daylight savings** is also supported.
+
+    ## Pre-aggregates
+
+    The following intervals are available:
+
+    - 1 second (not default)
+    - 1 minute
+    - 1 hour
+    - 1 day
+
+    The following table lists the combinations of start time, end time, and interval length, and then explains the expected response:
+
+      | Start Time                | End Time                  | Interval | Record Count | Explanation |
+      | :------------------------ | :------------------------ | :------: | :----------: | :---------- |
+      | 2021-11-03T00:02:00Z      | 2021-11-03T00:06:00Z      |    1m    |     0~4      | At most four records will be returned, because pre-aggregate exists for every minute |
+      | 2021-11-03T00:02:50Z      | 2021-11-03T00:06:20Z      |    1m    |     0~4      | At most four records will be returned, because millisecond was ignored, the query range is adjusted to `start=2021-11-03T00:02:00Z` `end=2021-11-03T00:06:00Z` |
+      | 2021-11-03T00:02:10Z      | 2021-11-03T00:03:10Z      |    1m    |     0~2      | At most two records will be returned. The query `interval` is 1 minute and the query range is not aligned to minute, the query range is adjusted to `start=2021-11-03T00:02:00Z` `end=2021-11-03T00:04:00Z` |
+      | 2021-11-03T00:02:00Z      | 2021-11-03T00:02:10Z      |    1m    |      0       | Reject, the duration between start time and end time is less than the interval |
+      | 2021-11-03T16:00:00Z      | 2021-11-03T18:00:00Z      |    1h    |     0~2      | At most two records will be returned, because pre-aggregates exists for every hour |
+      | 2021-11-03T16:10:00Z      | 2021-11-03T17:10:00Z      |    1h    |     0~2      | At most two records will be returned. The query `interval` is 1 hour and the query range is not aligned to hour, the query range is adjusted to `start=2021-11-03T16:00:00Z` `end=2021-11-03T18:00:00Z` |
+      | 2021-11-03T16:00:00Z      | 2021-11-03T16:58:00Z      |    1h    |      0       | Reject, the duration between start time and end time is less than the interval |
+      | 2021-11-03T21:00:00+08:00 | 2021-11-04T21:00:00+08:00 |    1d    |     0~1      | At most one record will be returned if the thing's time zone is UTC+11. Because thing's local time range is 2021-11-04T00:00:00+11:00~2021-11-05T00:00:00+11:00, and pre-aggregate exists for every day |
+      | 2021-11-03T21:00:00+08:00 | 2021-11-04T21:00:00+08:00 |    1d    |     0~2      | At most two records will be returned if the thing's time zone is UTC+12. Because thing's local time range is 2021-11-04T00:01:00+12:00~2021-11-05T00:01:00+12:00, the query `interval` is 1 day and the query range is not aligned to day, the query range is adjusted to `start=2021-11-04T00:00:00+12:00` `end=2021-11-06T00:00:00+12:00` |
+      | 2021-11-03T16:00:00Z      | 2021-11-03T20:00:00Z      |    1d    |      0       | Reject, the duration between start time and end time is less than the interval |
+
+    ## On the fly
+
+    Suport any interval with unit second, minute, hour, day, week or month
+
+    The following table lists the combinations of start time, end time, and interval length, and then explains the expected response:
+
+      | Start Time                | End Time                  | Interval | Record Count | Explanation |
+      | :------------------------ | :------------------------ | :------: | :----------: | :---------- |
+      | 2021-11-03T00:02:00Z      | 2021-11-03T00:06:00Z      |    2m    |     0~2      | At most two records will be returned, because two records will be aggregated on the fly base on the pre-aggregate exists for every minute |
+      | 2021-11-06T16:00:00Z      | 2021-11-14T16:00:00Z      |    1W    |     0~2      | At most two records will be returned. The query `interval` is 1 week and the query range is not aligned to week, the query range is adjusted to `start=2021-10-31T16:00:00Z` `end=2021-11-14T16:00:00Z`, two record will be aggregated on the fly base on the pre-aggregate exists for every day |
+      | 2021-01-01T16:00:00Z      | 2021-01-10T16:00:00Z      |    1W    |     0~1      | At most one record will be returned. The query `interval` is 1 week and the query range is not aligned to week, because the 1st week of year 2021 is from 2021-01-03T16:00:00Z to  2021-01-10T16:00:00Z, so query range is adjusted to `start=2021-01-03T16:00:00Z` `end=2021-01-10T16:00:00Z`, one record will be aggregated on the fly base on the pre-aggregate exists for every day |
+
+    ## Select
+
+    With the optional `select` parameter one can define which data to return. The value of the select parameter is a comma separated list of requested data. Each value in the list can either be a property name or an pre-aggregated field using a `propertyName.fieldName` syntax. The `field name` can be one of the following:
+
+      | Numeric Property | Boolean Property |
+      | :--------------- | :--------------- |
+      | firstTime        | firstTrueTime    |
+      | firstValue       | firstFalseTime   |
+      | lastTime         | lastTrueTime     |
+      | lastValue        | lastFalseTime    |
+      | minTime          | lastValue        |
+      | minValue         | trueCnt          |
+      | maxTime          | trueDuration     |
+      | maxValue         | falseCnt         |
+      | avg              | falseDuration    |
+      | sum              |                  |
+      | sd               |                  |
+      | goodCnt          |                  |
+      | badCnt           |                  |
+      | uncertainCnt     |                  |
+
+    If no select parameter is specified, all properties and fields are returned. If a property is specified, but no field name, all the fields for that property are returned. If a property and field name are specified, only that field of the property is returned. `Field names are case-insensitive`.
+
+  version: 1.6.0
+servers:
+  - url: /api/data/v1
+tags:
+  - name: Rollup
+    description: Managing rolled up and pre-aggregated time series data
+paths:
+  /rollup/{thingId}/{propertySetName}:
+    get:
+      tags:
+        - Rollup
+      summary: Get rolled up and pre-aggregated time sereis data
+      operationId: getRollup
+      parameters:
+        - name: thingId
+          in: path
+          description: Unique identifier of the thing.
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[a-f0-9]{32}'
+            type: string
+        - name: propertySetName
+          in: path
+          description: Name of the property set.
+          required: true
+          schema:
+            maxLength: 64
+            minLength: 1
+            type: string
+        - name: start
+          in: query
+          description: |
+            Beginning of the time range to be read (inclusive). The millisecond part of the start date will be ignored
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          description: |
+            End of the time range to be read (exclusive). The millisecond part of the end date will be ignored
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: interval
+          in: query
+          description: ^\d{1,2}[s|m|h|D|W|M]$
+          required: true
+          schema:
+            pattern: ^\d{1,2}[s|m|h|D|W|M]$
+            type: string
+        - name: select
+          in: query
+          description: Comma-separated list of properties to be returned. By default
+            all properties of a thing are considered.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of items to be retrieved.
+          schema:
+            maximum: 2000
+            type: integer
+            default: 2000
+      responses:
+        200:
+          description: Rolled up and pre-aggregated time series data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rollups:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/rollup'
+        400:
+          description: Invalid request.
+          content: { }
+        404:
+          description: Not Found.
+          content: { }
+components:
+  schemas:
+    rollup:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:00:00Z"
+        end:
+          type: string
+          format: date-time
+          example: "2021-08-02T09:00:00Z"
+        温度:
+          $ref: '#/components/schemas/aggregateNumeric'
+        运行:
+          $ref: '#/components/schemas/aggregateBoolean'
+    aggregateNumeric:
+      type: object
+      properties:
+        firstTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:01:00Z"
+        firstValue:
+          type: number
+          example: 33.0
+        lastTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:59:05Z"
+        lastValue:
+          type: number
+          example: 26.0
+        minTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:50:00Z"
+        minValue:
+          type: number
+          example: 25.0
+        maxTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:01:00Z"
+        maxValue:
+          type: number
+          example: 33.0
+        avg:
+          type: number
+          example: 29.6
+        sum:
+          type: number
+          example: 1368.0
+        sd:
+          type: number
+          description: Standard Deviation.
+          example: 1.678
+        goodCnt:
+          type: integer
+          description: Analyse product yield.
+          example: 45
+        badCnt:
+          type: integer
+          description: Analyse product yield.
+          example: 0
+        uncertainCnt:
+          type: integer
+          description: Analyse product yield.
+          example: 0
+    aggregateBoolean:
+      type: object
+      properties:
+        firstTrueTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:01:00Z"
+        firstFalseTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:00:05Z"
+        lastTrueTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:50:00Z"
+        lastFalseTime:
+          type: string
+          format: date-time
+          example: "2021-08-02T08:59:00Z"
+        lastValue:
+          type: boolean
+          description: Redundant field. The first value and the last value can be deduced by time.
+          example: false
+        trueCnt:
+          type: integer
+          description: Number of `True` occurrences.
+          example: 29
+        trueDuration:
+          type: number
+          description: Duration of `True` in millisecond retains in the query range. The sum of `trueDuration` and `falseDuration` equals the query time range.
+          example: 2000000
+        falseCnt:
+          type: integer
+          description: Number of `False` occurrences.
+          example: 6
+        falseDuration:
+          type: number
+          description: Duration of `False` in millisecond retains in the query range. The sum of `trueDuration` and `falseDuration` equals the query time range.
+          example: 1600000
+  parameters:
+    thingId:
+      name: thingId
+      in: path
+      description: Unique identifier of the thing.
+      required: true
+      schema:
+        maxLength: 32
+        minLength: 32
+        pattern: '[a-f0-9]{32}'
+        type: string
+    propertySetName:
+      name: propertySetName
+      in: path
+      description: Name of the property set.
+      required: true
+      schema:
+        maxLength: 64
+        minLength: 1
+        type: string

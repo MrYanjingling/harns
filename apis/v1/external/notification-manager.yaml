@@ -1,0 +1,880 @@
+openapi: 3.0.1
+info:
+  title: Notification Manager API
+  description: |2-
+
+    API defining resources and operations for notifications. Now, webhook, email, weCom and weChat are supported. They have their own supported content type.
+    1. webhook
+
+    It supports json.
+
+    2. email
+
+    It supports text or html.
+
+    3. weCom/weChat
+
+    It supports text or markdown.
+
+  version: 1.6.0
+servers:
+  - url: /api/notification/v1
+tags:
+  - name: Recipients
+    description: Managing recipients
+  - name: MessageTemplates
+    description: Managing message templates
+  - name: Templates
+    description: Managing templates
+  - name: Messages
+    description: Managing messages
+  - name: ServerConfigurations
+    description: Managing notification servers' configuration
+paths:
+  /recipients:
+    post:
+      tags:
+        - Recipients
+      summary: Creat a recipient
+      operationId: createRecipient
+      requestBody:
+        description: recipient
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipient'
+        required: true
+      responses:
+        201:
+          description: The recipient has been created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipient'
+        400:
+          description: Invalid request.
+    get:
+      tags:
+        - Recipients
+      summary: List recipients
+      operationId: listRecipients
+      responses:
+        200:
+          description: Array of recipients
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recipients:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Recipient'
+        400:
+          description: Invalid request.
+  /recipients/{id}:
+    get:
+      tags:
+        - Recipients
+      summary: Get the recipient
+      operationId: getRecipientById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The recipient
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipient'
+        404:
+          description: Not Found.
+    delete:
+      tags:
+        - Recipients
+      summary: Delete a recipient
+      operationId: deleteRecipient
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: orphanRemoval
+          description: >-
+            - If true, after deletion of the recipient, the template is deleted if it does not contains a recipient.
+              The template is updated if it still contains other recipient.
+
+            - If false, it is not able to be deleted if there is a template containing it.
+          required: false
+          schema:
+            type: boolean
+        - in: header
+          name: If-Match
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The deleted recipient
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipient'
+        "400":
+          description: Invalid Request.
+        "404":
+          description: Not Found.
+        "412":
+          description: Precondition Failed.
+        "428":
+          description: Precondition Required.
+        "500":
+          description: Internal Server Error.
+  /messageTemplates:
+    post:
+      tags:
+        - MessageTemplates
+      summary: Creat a message template
+      operationId: createMessageTemplate
+      requestBody:
+        description: message template
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageTemplate'
+        required: true
+      responses:
+        201:
+          description: The message template has been created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+        400:
+          description: Invalid request.
+    get:
+      tags:
+        - MessageTemplates
+      summary: List message templates
+      operationId: listMessageTemplates
+      responses:
+        200:
+          description: Array of message templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageTemplates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MessageTemplate'
+        400:
+          description: Invalid request.
+  /messageTemplates/{id}:
+    get:
+      tags:
+        - MessageTemplates
+      summary: Get the message template
+      operationId: getMessageTemplateById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The message template
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+        404:
+          description: Not Found.
+    delete:
+      tags:
+        - MessageTemplates
+      summary: Delete a message template
+      operationId: deleteMsgTmpl
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: orphanRemoval
+          description: >-
+            - If true, after deletion of the message template, the template is deleted if it does not contains a message template.
+              The template is updated if it still contains other message template.
+
+            - If false, it is not able to be deleted if there is a template containing it.
+          required: false
+          schema:
+            type: boolean
+        - in: header
+          name: If-Match
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The deleted message template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+        "400":
+          description: Invalid Request.
+        "404":
+          description: Not Found.
+        "412":
+          description: Precondition Failed.
+        "428":
+          description: Precondition Required.
+        "500":
+          description: Internal Server Error.
+  /messageTemplates/{id}/placeholders:
+    get:
+      tags:
+        - MessageTemplates
+      summary: Get the message template's placeholders
+      operationId: getMessageTemplatePlaceholders
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The messge template's placeholders
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  placeholders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TemplatePlaceholder'
+        404:
+          description: Not Found.
+    put:
+      tags:
+        - MessageTemplates
+      summary: Upate the message template's placeholders' default value
+      operationId: updateMessageTemplatePlaceholdersDefaultvalue
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          required: true
+          description: Last known version to facilitate optimistic locking.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplatePlaceholder'
+      responses:
+        200:
+          description: The message template placeholders' default value have been updated.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  placeholders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TemplatePlaceholder'
+        400:
+          description: Invalid Request.
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed. Message template is changed in the background.
+  /templates:
+    post:
+      tags:
+        - Templates
+      summary: Create templates
+      operationId: createTemplate
+      requestBody:
+        description: template
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Template'
+        required: true
+      responses:
+        201:
+          description: The template has been created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        400:
+          description: Invalid request.
+    get:
+      tags:
+        - Templates
+      summary: List templates
+      operationId: listTemplates
+      responses:
+        200:
+          description: The templates matched the tenant scope and filter criterias.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+        400:
+          description: Invalid request.
+  /templates/{id}:
+    get:
+      tags:
+        - Templates
+      summary: Get the template by id
+      operationId: getTemplateById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The template
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        404:
+          description: Not Found.
+    delete:
+      tags:
+        - Templates
+      summary: Delete the template
+      operationId: deleteTmpl
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: If-Match
+          description: Last known version to facilitate optimistic locking
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The deleted template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        "400":
+          description: Invalid Request.
+        "404":
+          description: Not Found.
+        "412":
+          description: Precondition Failed.
+        "428":
+          description: Precondition Required.
+        "500":
+          description: Internal Server Error.
+  /messages:
+    post:
+      tags:
+        - Messages
+      summary: Send message
+      operationId: sendMessage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/SimpleMessage'
+                - $ref: '#/components/schemas/TemplateMessage'
+        required: true
+      responses:
+        202:
+          description: Accepted.
+        400:
+          description: Invalid request.
+  /serverConfigurations:
+    post:
+      tags:
+        - ServerConfigurations
+      summary: Configure server
+      operationId: configureServer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerConfigurations'
+        required: true
+      responses:
+        201:
+          description: Created.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content: {}
+        400:
+          description: Invalid request.
+    get:
+      tags:
+        - ServerConfigurations
+      summary: Get servers' configuration
+      operationId: getServerConfguration
+      responses:
+        200:
+          description: The tenant's notification servers' configuration.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverConfigurations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ServerConfigurations'
+        400:
+          description: Invalid request.
+  /serverConfigurations/{id}:
+    get:
+      tags:
+        - ServerConfigurations
+      summary: Get servers' configuration
+      operationId: getServerConfgurationByID
+      responses:
+        200:
+          description: The tenant's notification servers' configuration.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerConfigurations'
+        404:
+          description: Not Found.
+    put:
+      tags:
+        - ServerConfigurations
+      summary: Update servers' configuration
+      operationId: updateServerConfguration
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          description: Last known version to facilitate optimistic locking.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerConfigurations'
+      responses:
+        200:
+          description: Updated.
+          headers:
+            ETag:
+              description: ETag hash of the resource
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerConfigurations'
+        404:
+          description: Not Found.
+        412:
+          description: Precondition Failed. Confifguration is changed in the background.
+
+components:
+  schemas:
+    Recipient:
+      required:
+        - detail
+        - name
+      type: object
+      properties:
+        id:
+          maxLength: 26
+          minLength: 22
+          type: string
+          description: Unique identifier of recipient.
+          format: uuid
+          example: 1mV2MixmQhGkdELYx591lJQ
+          readOnly: true
+        eTag:
+          type: string
+          description: ETag hash of the resource.
+          readOnly: true
+          example: "0"
+        name:
+          maxLength: 32
+          type: string
+          description: Name of the recipient. It should be unique for one tenant.
+          example: 峨眉山会议室服务部
+        tenant:
+          maxLength: 16
+          type: string
+          description: Tenant id.
+          readOnly: true
+          example: main
+        detail:
+          type: array
+          items:
+            type: object
+            required:
+              - type
+              - address
+            properties:
+              address:
+                maxLength: 64
+                minLength: 1
+                type: string
+                example: maintainer@getech.cn
+              type:
+                type: string
+                description: For `webhook`, we shall `POST` to this uri. If 2xx status code is received, we consider the request is successful.
+                example: email
+                enum:
+                  - email
+                  - webhook
+                  - weCom
+                  - weChat
+    MessageTemplate:
+      required:
+        - type
+        - name
+        - content
+      type: object
+      properties:
+        id:
+          maxLength: 26
+          minLength: 22
+          type: string
+          description: Unique identifier of recipient.
+          format: uuid
+          example: 3qWFATBPRsORHFk3JSQEPQ
+          readOnly: true
+        name:
+          maxLength: 64
+          type: string
+          description: Name of the template. It should be unique for one tenant.
+          example: 温度超过 30 摄氏度消息模板
+        type:
+          type: string
+          description: Type of template content. Only **text** and **html** are supported
+            now.
+          example: text
+          enum:
+            - text
+            - html
+            - markdown
+        content:
+          maxLength: 349525
+          minLength: 1
+          type: string
+          example: 尊敬的{{name}}， 您好。 \n\t你的{{meetingRoom}}温度超过{{expectedValue}}，已到{{actualValue}}。\n\t详情请见：<a
+            href={{actualUrl}}>更多信息</a>
+        tenant:
+          maxLength: 16
+          type: string
+          description: Tenant id.
+          readOnly: true
+          example: main
+        eTag:
+          type: string
+          description: ETag hash of the resource.
+          readOnly: true
+          example: "0"
+    Template:
+      type: object
+      required:
+        - name
+        - subject
+        - from
+        - recipients
+        - messageTemplates
+      properties:
+        id:
+          type: string
+          description: Unique identifier of template.
+          minLength: 22
+          maxLength: 26
+          format: uuid
+          readOnly: true
+          example: LPae5tn2Ri2t91y0AkGSd8g
+        name:
+          maxLength: 64
+          type: string
+          description: Name of the template. It should be unique for one tenant.
+          example: 温度超过 30 摄氏度模板
+        tenant:
+          maxLength: 16
+          type: string
+          description: Tenant id.
+          readOnly: true
+          example: main
+        eTag:
+          type: string
+          description: ETag hash of the resource.
+          readOnly: true
+          example: "0"
+        subject:
+          maxLength: 77
+          minLength: 1
+          type: string
+          example: 【警告】室温过高
+        from:
+          type: string
+          example: Afflatus
+        recipients:
+          type: array
+          required:
+            - id
+          items:
+            properties:
+              id:
+                type: string
+                description: Id of recipient.
+                example: 1mV2MixmQhGkdELYx591lJQ
+        messageTemplates:
+          type: array
+          items:
+            type: string
+            description: Id of message template.
+            example: 3qWFATBPRsORHFk3JSQEPQ
+    TemplatePlaceholder:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 64
+          type: string
+          example: meetingRoom
+        defaultValue:
+          description: >
+            **It can be any datatype.** However, swagger doesn't support this behavior.
+          type: string
+          example: 峨眉山会议室
+    MessageCommon:
+      type: object
+      required:
+        - channel
+        - payload
+      properties:
+        channel:
+          type: string
+          example: email
+          enum:
+            - webhook
+            - email
+            - weCom
+            - weChat
+        subject:
+          maxLength: 77
+          minLength: 1
+          type: string
+          example: 【警告】室温过高
+        from:
+          type: string
+          example: Afflatus
+    SimpleMessage:
+      type: object
+      required:
+        - to
+      allOf:
+        - $ref: '#/components/schemas/MessageCommon'
+        - properties:
+            to:
+              type: array
+              items:
+                type: string
+                example: maintainer@getech.cn
+            payload:
+              type: object
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 349525 # 1024 * 1024 / 3
+                  example: 峨眉山会议室温度超过 30 摄氏度。
+    TemplateMessage:
+      type: object
+      required:
+        - templateId
+      allOf:
+        - $ref: '#/components/schemas/MessageCommon'
+        -  properties:
+             templateId:
+               type: string
+               description: Id of template.
+               example: LPae5tn2Ri2t91y0AkGSd8g
+             payload:
+               type: object
+               additionalProperties:
+                 type: string
+                 description: Placeholder values.
+                 example: >
+                   "name": 峨眉山会议室
+    ServerConfigurations:
+      type: object
+      properties:
+        tenant:
+          maxLength: 16
+          type: string
+          description: Tenant id.
+          readOnly: true
+          example: main
+        eTag:
+          type: string
+          description: ETag hash of the resource.
+          readOnly: true
+          example: "0"
+        id:
+          type: string
+          readOnly: true
+          example: 68107906f2b44cdcb576612512b89f68
+        email:
+          type: object
+          properties:
+            smtp:
+              type: object
+              required:
+                - hostname
+                - port
+                - username
+                - password
+              properties:
+                hostname:
+                  type: string
+                  format: hostname
+                  example: mail.example.com
+                port:
+                  type: string
+                  example: 587
+                username:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  example: xxxxxxxx
+        weCom:
+          type: object
+          description: >-
+            [More information](https://work.weixin.qq.com/api/doc/90000/90135/90236)
+          required:
+            - corpId
+            - corpSecret
+            - agentId
+          properties:
+            corpId:
+              type: string
+              description: Corporation Id from WeCom
+              example: xxxxxxxx
+            corpSecret:
+              type: string
+              description: Corporation application secret from WeCom
+              format: password
+              example: xxxxxxxx
+            agentId:
+              type: string
+              description: Unique identifier for WeCom application
+              example: 1
+        weChat:
+          type: object
+          description: >-
+            [More Information](https://developers.weixin.qq.com/doc/offiaccount/Basic_Information/Get_access_token.html)
+          required:
+            - appId
+            - appSecret
+          properties:
+            appId:
+              type: string
+              description: Unique credential of third-party users from WeChat Official Accounts.
+              example: xxxxxx
+            appSecret:
+              type: string
+              description: The key of the unique credential of third-party users from WeChat Official Accounts.
+              format: password
+              example: xxxxxx
