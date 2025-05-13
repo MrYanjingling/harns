@@ -1,10 +1,12 @@
 package repository
 
 import (
+	"reflect"
 	"regexp"
 	"strings"
 )
 
+type Object map[string]any
 type SortOrder string
 
 const (
@@ -29,15 +31,15 @@ func NewQuery() *Query {
 	}
 }
 
-type Filters []Exp
+type Filters []Filter
 
 func NewFilters() Filters {
 	return make(Filters, 0)
 }
 
-func (f Filters) MatchValue(value map[string]any) bool {
-	for _, exp := range f {
-		if !exp.MatchValue(value) {
+func (f Filters) MatchValue(value Object) bool {
+	for _, filter := range f {
+		if !filter.MatchValue(value) {
 			return false
 		}
 	}
@@ -49,172 +51,251 @@ func (f Filters) IsEmpty() bool {
 }
 
 func (f Filters) ContainsField(key string) bool {
-	for _, exp := range f {
-		if exp.ContainsField(key) {
+	for _, filter := range f {
+		if filter.ContainsField(key) {
 			return true
 		}
 	}
 	return false
 }
 
-type Exp interface {
-	MatchValue(value map[string]any) bool
+type Filter interface {
+	MatchValue(value Object) bool
 	ContainsField(key string) bool
 }
 
-type FieldExp struct {
-	Key string
-	Ops []Op
+type FieldFilter struct {
+	Key   string
+	Op    Operator
+	Value any
 }
 
-func (e FieldExp) MatchValue(value map[string]any) bool {
-	val, ok := value[e.Key]
+func (f FieldFilter) MatchValue(value Object) bool {
+	val, ok := value[f.Key]
 	if !ok {
 		return false
 	}
-	for _, op := range e.Ops {
-		if !op.MatchValue(val) {
-			return false
+	return f.Op.MatchValue(val, f.Value)
+}
+
+func (f FieldFilter) ContainsField(key string) bool {
+	return f.Key == key
+}
+
+type Operator interface {
+	MatchValue(val any, expected any) bool
+}
+
+type EQ struct{}
+
+func (op EQ) MatchValue(val any, expected any) bool {
+	return val == expected
+}
+
+type NE struct{}
+
+func (op NE) MatchValue(val any, expected any) bool {
+	return val != expected
+}
+
+type GT struct{}
+
+func (op GT) MatchValue(val any, expected any) bool {
+	switch v := val.(type) {
+	case float64:
+		switch e := expected.(type) {
+		case float64:
+			return v > e
+		case int:
+			return v > float64(e)
+		case float32:
+			return v > float64(e)
 		}
-	}
-	return true
-}
-
-func (e FieldExp) ContainsField(key string) bool {
-	return e.Key == key
-}
-
-type AndExp struct {
-	Filters Filters
-}
-
-func (e AndExp) MatchValue(value map[string]any) bool {
-	return e.Filters.MatchValue(value)
-}
-
-func (e AndExp) ContainsField(key string) bool {
-	return e.Filters.ContainsField(key)
-}
-
-type OrExp struct {
-	Filters Filters
-}
-
-func (e OrExp) MatchValue(value map[string]any) bool {
-	for _, exp := range e.Filters {
-		if exp.MatchValue(value) {
-			return true
+	case int:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) > e
+		case int:
+			return v > e
+		case float32:
+			return float64(v) > float64(e)
+		}
+	case float32:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) > e
+		case int:
+			return float64(v) > float64(e)
+		case float32:
+			return v > e
 		}
 	}
 	return false
 }
 
-func (e OrExp) ContainsField(key string) bool {
-	return e.Filters.ContainsField(key)
+type GTE struct{}
+
+func (op GTE) MatchValue(val any, expected any) bool {
+	switch v := val.(type) {
+	case float64:
+		switch e := expected.(type) {
+		case float64:
+			return v >= e
+		case int:
+			return v >= float64(e)
+		case float32:
+			return v >= float64(e)
+		}
+	case int:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) >= e
+		case int:
+			return v >= e
+		case float32:
+			return float64(v) >= float64(e)
+		}
+	case float32:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) >= e
+		case int:
+			return float64(v) >= float64(e)
+		case float32:
+			return v >= e
+		}
+	}
+	return false
 }
 
-type Op interface {
-	MatchValue(val any) bool
+type LT struct{}
+
+func (op LT) MatchValue(val any, expected any) bool {
+	switch v := val.(type) {
+	case float64:
+		switch e := expected.(type) {
+		case float64:
+			return v < e
+		case int:
+			return v < float64(e)
+		case float32:
+			return v < float64(e)
+		}
+	case int:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) < e
+		case int:
+			return v < e
+		case float32:
+			return float64(v) < float64(e)
+		}
+	case float32:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) < e
+		case int:
+			return float64(v) < float64(e)
+		case float32:
+			return v < e
+		}
+	}
+	return false
 }
 
-type EQ struct {
-	Value any
+type LTE struct{}
+
+func (op LTE) MatchValue(val any, expected any) bool {
+	switch v := val.(type) {
+	case float64:
+		switch e := expected.(type) {
+		case float64:
+			return v <= e
+		case int:
+			return v <= float64(e)
+		case float32:
+			return v <= float64(e)
+		}
+	case int:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) <= e
+		case int:
+			return v <= e
+		case float32:
+			return float64(v) <= float64(e)
+		}
+	case float32:
+		switch e := expected.(type) {
+		case float64:
+			return float64(v) <= e
+		case int:
+			return float64(v) <= float64(e)
+		case float32:
+			return v <= e
+		}
+	}
+	return false
 }
 
-func (op EQ) MatchValue(val any) bool {
-	return val == op.Value
-}
+type START struct{}
 
-type NE struct {
-	Value any
-}
-
-func (op NE) MatchValue(val any) bool {
-	return val != op.Value
-}
-
-type GT struct {
-	Value float64
-}
-
-func (op GT) MatchValue(val any) bool {
-	v, ok := val.(float64)
-	return ok && v > op.Value
-}
-
-type GTE struct {
-	Value float64
-}
-
-func (op GTE) MatchValue(val any) bool {
-	v, ok := val.(float64)
-	return ok && v >= op.Value
-}
-
-type LT struct {
-	Value float64
-}
-
-func (op LT) MatchValue(val any) bool {
-	v, ok := val.(float64)
-	return ok && v < op.Value
-}
-
-type LTE struct {
-	Value float64
-}
-
-func (op LTE) MatchValue(val any) bool {
-	v, ok := val.(float64)
-	return ok && v <= op.Value
-}
-
-type START struct {
-	Prefix string
-}
-
-func (op START) MatchValue(val any) bool {
+func (op START) MatchValue(val any, expected any) bool {
 	s, ok := val.(string)
-	return ok && strings.HasPrefix(s, op.Prefix)
+	prefix, ok := expected.(string)
+	return ok && strings.HasPrefix(s, prefix)
 }
 
-type END struct {
-	Suffix string
-}
+type END struct{}
 
-func (op END) MatchValue(val any) bool {
+func (op END) MatchValue(val any, expected any) bool {
 	s, ok := val.(string)
-	return ok && strings.HasSuffix(s, op.Suffix)
+	suffix, ok := expected.(string)
+	return ok && strings.HasSuffix(s, suffix)
 }
 
-type CONTAINS struct {
-	Substr string
+type CONTAINS struct{}
+
+func (op CONTAINS) MatchValue(val any, expected any) bool {
+	// 支持字符串和字符串数组的CONTAINS判断
+	switch v := val.(type) {
+	case string:
+		substr, ok := expected.(string)
+		return ok && strings.Contains(v, substr)
+	default:
+		// 使用反射处理数组/切片类型的CONTAINS判断
+		valVal := reflect.ValueOf(val)
+		if valVal.Kind() == reflect.Slice || valVal.Kind() == reflect.Array {
+			for i := 0; i < valVal.Len(); i++ {
+				if reflect.DeepEqual(valVal.Index(i).Interface(), expected) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
-func (op CONTAINS) MatchValue(val any) bool {
+type REGEXP struct{}
+
+func (op REGEXP) MatchValue(val any, expected any) bool {
 	s, ok := val.(string)
-	return ok && strings.Contains(s, op.Substr)
-}
-
-type REGEXP struct {
-	Pattern string
-}
-
-func (op REGEXP) MatchValue(val any) bool {
-	s, ok := val.(string)
+	pattern, ok := expected.(string)
 	if !ok {
 		return false
 	}
-	r, err := regexp.Compile(op.Pattern)
+	r, err := regexp.Compile(pattern)
 	return err == nil && r.MatchString(s)
 }
 
-type IN struct {
-	Values []any
-}
+type IN struct{}
 
-func (op IN) MatchValue(val any) bool {
-	for _, v := range op.Values {
+func (op IN) MatchValue(val any, expected any) bool {
+	values, ok := expected.([]any)
+	if !ok {
+		return false
+	}
+	for _, v := range values {
 		if v == val {
 			return true
 		}
@@ -222,15 +303,46 @@ func (op IN) MatchValue(val any) bool {
 	return false
 }
 
-type NIN struct {
-	Values []any
-}
+type NIN struct{}
 
-func (op NIN) MatchValue(val any) bool {
-	for _, v := range op.Values {
+func (op NIN) MatchValue(val any, expected any) bool {
+	values, ok := expected.([]any)
+	if !ok {
+		return false
+	}
+	for _, v := range values {
 		if v == val {
 			return false
 		}
 	}
 	return true
+}
+
+type AndFilter struct {
+	Filters Filters
+}
+
+func (f AndFilter) MatchValue(value Object) bool {
+	return f.Filters.MatchValue(value)
+}
+
+func (f AndFilter) ContainsField(key string) bool {
+	return f.Filters.ContainsField(key)
+}
+
+type OrFilter struct {
+	Filters Filters
+}
+
+func (f OrFilter) MatchValue(value Object) bool {
+	for _, filter := range f.Filters {
+		if filter.MatchValue(value) {
+			return true
+		}
+	}
+	return false
+}
+
+func (f OrFilter) ContainsField(key string) bool {
+	return f.Filters.ContainsField(key)
 }
