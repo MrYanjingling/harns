@@ -14,13 +14,13 @@ type MemRepository struct {
 
 type ResourceName string
 
-func NewMemRepository() *MemRepository {
+func NewMemRepository() Repository[Object, ResourceName] {
 	return &MemRepository{
 		caches: make(map[string]map[any]Object),
 	}
 }
 
-func (m MemRepository) Find(ctx ResourceName, query *Query) ([]Object, error) {
+func (m *MemRepository) Find(ctx ResourceName, query *Query) ([]Object, error) {
 	cache, ok := m.caches[string(ctx)]
 	if !ok {
 		return nil, nil
@@ -36,7 +36,7 @@ func (m MemRepository) Find(ctx ResourceName, query *Query) ([]Object, error) {
 }
 
 // filterObjects filters objects based on the provided filters
-func (m MemRepository) filterObjects(objects map[any]Object, filters Filters) []Object {
+func (m *MemRepository) filterObjects(objects map[any]Object, filters Filters) []Object {
 	var results []Object
 	for _, item := range objects {
 		if filters.MatchValue(item) {
@@ -47,7 +47,7 @@ func (m MemRepository) filterObjects(objects map[any]Object, filters Filters) []
 }
 
 // applyProjection applies the projection to the results
-func (m MemRepository) applyProjection(results []Object, projection map[string]bool) []Object {
+func (m *MemRepository) applyProjection(results []Object, projection map[string]bool) []Object {
 	if projection == nil || len(projection) == 0 {
 		return results
 	}
@@ -58,7 +58,7 @@ func (m MemRepository) applyProjection(results []Object, projection map[string]b
 }
 
 // projectObject creates a new object with only the projected fields
-func (m MemRepository) projectObject(obj Object, projection map[string]bool) Object {
+func (m *MemRepository) projectObject(obj Object, projection map[string]bool) Object {
 	newItem := Object{}
 	for field := range projection {
 		if val, ok := obj[field]; ok {
@@ -69,7 +69,7 @@ func (m MemRepository) projectObject(obj Object, projection map[string]bool) Obj
 }
 
 // applyDistinct applies the distinct operation to the results
-func (m MemRepository) applyDistinct(results []Object, projection map[string]bool, distinct bool) []Object {
+func (m *MemRepository) applyDistinct(results []Object, projection map[string]bool, distinct bool) []Object {
 	if !distinct {
 		return results
 	}
@@ -86,7 +86,7 @@ func (m MemRepository) applyDistinct(results []Object, projection map[string]boo
 }
 
 // applySorting sorts the results based on the provided sort criteria
-func (m MemRepository) applySorting(results []Object, sortCriteria map[string]SortOrder) []Object {
+func (m *MemRepository) applySorting(results []Object, sortCriteria map[string]SortOrder) []Object {
 	if len(sortCriteria) == 0 {
 		return results
 	}
@@ -113,7 +113,7 @@ func (m MemRepository) applySorting(results []Object, sortCriteria map[string]So
 }
 
 // applyPagination applies skip and limit to the results
-func (m MemRepository) applyPagination(results []Object, skip, limit *int) []Object {
+func (m *MemRepository) applyPagination(results []Object, skip, limit *int) []Object {
 	s := 0
 	if skip != nil {
 		s = *skip
@@ -132,22 +132,22 @@ func (m MemRepository) applyPagination(results []Object, skip, limit *int) []Obj
 	return results[s:end]
 }
 
-func (m MemRepository) Insert(ctx ResourceName, items []Object) error {
+func (m *MemRepository) Insert(ctx ResourceName, items []Object) error {
 	if _, ok := m.caches[string(ctx)]; !ok {
 		m.caches[string(ctx)] = make(map[any]Object)
 	}
 
 	for _, obj := range items {
-		id, ok := obj["_id"]
+		id, ok := obj["id"]
 		if !ok {
-			return errors.New("missing _id field")
+			return errors.New("missing id field")
 		}
 		m.caches[string(ctx)][id] = obj
 	}
 	return nil
 }
 
-func (m MemRepository) Update(ctx ResourceName, fn UpdateFn[Object], filters *Filters) ([]Object, error) {
+func (m *MemRepository) Update(ctx ResourceName, fn UpdateFn[Object], filters *Filters) ([]Object, error) {
 	cache, ok := m.caches[string(ctx)]
 	if !ok {
 		return nil, nil
@@ -164,7 +164,7 @@ func (m MemRepository) Update(ctx ResourceName, fn UpdateFn[Object], filters *Fi
 	return updatedItems, nil
 }
 
-func (m MemRepository) Clear(ctx ResourceName, filters *Filters) error {
+func (m *MemRepository) Clear(ctx ResourceName, filters *Filters) error {
 	cache, ok := m.caches[string(ctx)]
 	if !ok {
 		return nil
@@ -178,13 +178,13 @@ func (m MemRepository) Clear(ctx ResourceName, filters *Filters) error {
 	return nil
 }
 
-func (m MemRepository) Count(ctx ResourceName, query *Query) (int32, error) {
+func (m *MemRepository) Count(ctx ResourceName, query *Query) (uint64, error) {
 	cache, ok := m.caches[string(ctx)]
 	if !ok {
 		return 0, nil
 	}
 
-	var count int32
+	var count uint64
 	for _, obj := range cache {
 		if query.Filters.MatchValue(obj) {
 			count++

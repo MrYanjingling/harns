@@ -14,3 +14,7 @@ type Migrator[T any, C any] interface {
 	Init(ctx C) error
 	Migrate(ctx C) error
 }
+
+type ExtendedRepository[T any, C any] struct {
+	Repository[T, C]
+}

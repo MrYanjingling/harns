@@ -8,17 +8,15 @@ func TestMemRepository(t *testing.T) {
 	repo := NewMemRepository()
 	ctx := ResourceName("test")
 
-	// 测试 Insert
 	items := []Object{
-		{"_id": 1, "name": "Alice", "age": 25, "tags": []string{"a", "b"}},
-		{"_id": 2, "name": "Bob", "age": 30, "tags": []string{"b", "c"}},
-		{"_id": 3, "name": "Charlie", "age": 35, "tags": []string{"c", "d"}},
+		{"id": 1, "name": "Alice", "age": 25, "tags": []string{"a", "b"}},
+		{"id": 2, "name": "Bob", "age": 30, "tags": []string{"b", "c"}},
+		{"id": 3, "name": "Charlie", "age": 35, "tags": []string{"c", "d"}},
 	}
 	if err := repo.Insert(ctx, items); err != nil {
 		t.Fatalf("Insert failed: %v", err)
 	}
 
-	// 测试 Update
 	t.Run("Update", func(t *testing.T) {
 		updateFn := func(item *Object) Object {
 			(*item)["age"] = 26
@@ -34,7 +32,6 @@ func TestMemRepository(t *testing.T) {
 		}
 	})
 
-	// 测试 Clear
 	t.Run("Clear", func(t *testing.T) {
 		filters := Filters{BinaryOp{Key: "name", Op: EQ{}, Value: "Bob"}}
 		if err := repo.Clear(ctx, &filters); err != nil {
@@ -46,7 +43,6 @@ func TestMemRepository(t *testing.T) {
 		}
 	})
 
-	// 测试 Find
 	t.Run("Find", func(t *testing.T) {
 		query := NewQuery()
 		query.Filters = Filters{BinaryOp{Key: "age", Op: GTE{}, Value: 25}}
@@ -60,16 +56,15 @@ func TestMemRepository(t *testing.T) {
 	})
 }
 
-// 拆分后的独立测试用例
 func TestFind_Filters(t *testing.T) {
 	repo := NewMemRepository()
 	ctx := ResourceName("test")
 
-	// 初始化数据
+	// Insert
 	items := []Object{
-		{"_id": 1, "name": "Alice", "age": 25, "tags": []string{"a", "b"}},
-		{"_id": 2, "name": "Bob", "age": 30, "tags": []string{"b", "c"}},
-		{"_id": 3, "name": "Charlie", "age": 35, "tags": []string{"c", "d"}},
+		{"id": 1, "name": "Alice", "age": 25, "tags": []string{"a", "b"}},
+		{"id": 2, "name": "Bob", "age": 30, "tags": []string{"b", "c"}},
+		{"id": 3, "name": "Charlie", "age": 35, "tags": []string{"c", "d"}},
 	}
 	if err := repo.Insert(ctx, items); err != nil {
 		t.Fatalf("Insert failed: %v", err)
@@ -115,8 +110,7 @@ func TestFind_Projection(t *testing.T) {
 	repo := NewMemRepository()
 	ctx := ResourceName("test")
 
-	// 初始化相同数据...
-
+	// Init...
 	t.Run("FieldProjection", func(t *testing.T) {
 		query := NewQuery()
 		query.Projection = map[string]bool{"name": true, "age": true}
@@ -129,15 +123,13 @@ func TestFind_Projection(t *testing.T) {
 	})
 }
 
-// 新增的测试用例
 func TestFind_Operators(t *testing.T) {
 	repo := NewMemRepository()
 	ctx := ResourceName("test")
 
-	// 测试数据准备
 	items := []Object{
-		{"_id": 1, "name": "TestA", "score": 85, "tags": []string{"x", "y"}},
-		{"_id": 2, "name": "TestB", "score": 92, "tags": []string{"y", "z"}},
+		{"id": 1, "name": "TestA", "score": 85, "tags": []string{"x", "y"}},
+		{"id": 2, "name": "TestB", "score": 92, "tags": []string{"y", "z"}},
 	}
 	repo.Insert(ctx, items)
 
@@ -164,11 +156,10 @@ func TestFind_Distinct(t *testing.T) {
 	repo := NewMemRepository()
 	ctx := ResourceName("test")
 
-	// 测试数据准备
 	items := []Object{
-		{"_id": 1, "name": "Alice", "city": "Beijing"},
-		{"_id": 2, "name": "Bob", "city": "Shanghai"},
-		{"_id": 3, "name": "Alice", "city": "Beijing"},
+		{"id": 1, "name": "Alice", "city": "Beijing"},
+		{"id": 2, "name": "Bob", "city": "Shanghai"},
+		{"id": 3, "name": "Alice", "city": "Beijing"},
 	}
 	repo.Insert(ctx, items)
 
@@ -187,11 +178,10 @@ func TestFind_SortPagination(t *testing.T) {
 	repo := NewMemRepository()
 	ctx := ResourceName("test")
 
-	// 测试数据准备
 	items := []Object{
-		{"_id": 1, "name": "A", "score": 80},
-		{"_id": 2, "name": "B", "score": 90},
-		{"_id": 3, "name": "C", "score": 70},
+		{"id": 1, "name": "A", "score": 80},
+		{"id": 2, "name": "B", "score": 90},
+		{"id": 3, "name": "C", "score": 70},
 	}
 	repo.Insert(ctx, items)
 
