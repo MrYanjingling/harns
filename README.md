@@ -2,7 +2,7 @@
 
 ## Architecture
 
-![architecture](http://www.plantuml.com/plantuml/uml/TP4nRiCm34Ltde98XawwG504GT6bGuS2sOmEj4shHYWfaQcqkNrh6P5X8zsefwTFY3mCIb6J4wYQ8CADXlY9DE2c3sfQKZA5Rt0hlVtIMX93LSTmuhMRuIYUUt-2wf8utbPAPiieiZQofKNhmahQg9N0jVGereMMPPRpqJZoP7dvboUi-CfUdOspdib_Uap22ti43sKOFrtJmFZcEqa_ho_ZcpxNROtR6uk4R-YzSkoeONGNrHpx_d4yRee0cHlXJiqUfpdli0b-I8vXEgD9vx_BiZ0e5HgpBqrtED2L8KyCduqf5r3ckNm0zoBJMPhvrFY-83YmRvEJNm00)
+![architecture](https://github.com/MrYanjingling/harns/blob/dev-entropy/%E6%9E%B6%E6%9E%84%E5%9B%BE.jpg)
 
 ```plantuml
 @startuml
