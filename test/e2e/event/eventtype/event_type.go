@@ -89,7 +89,7 @@ func matchEventType1(et *v1.EventType) {
 		"Name":     Equal("eventtype2"),
 		"ParentId": gstruct.PointTo(Equal("main.BaseEvent")),
 		"TTL":      gstruct.PointTo(Equal(10)),
-		"Fields": gstruct.MatchAllElements(fieldNameIdentifier, gstruct.Elements{
+		"Properties": gstruct.MatchAllElements(fieldNameIdentifier, gstruct.Elements{
 			"f1": gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 				"Name":       Equal("f1"),
 				"Filterable": Equal(true),

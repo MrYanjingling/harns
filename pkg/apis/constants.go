@@ -5,18 +5,18 @@ import (
 )
 
 const (
-	// HTTP Request Fields
+	// HTTP Request Properties
 	IfModifiedSince   = "If-Modified-Since"
 	IfUnmodifiedSince = "If-Unmodified-Since"
 	IfMatch           = "If-Match"
 	IfNoneMatch       = "If-None-Match"
 	IfRange           = "If-Range"
 
-	// HTTP Response Fields
+	// HTTP Response Properties
 	Location = "Location"
 	ETag     = "ETag"
 
-	// Self-defined Fields
+	// Self-defined Properties
 	Filter        = "filter"
 	Start         = "start"
 	End           = "end"
