@@ -12,5 +12,22 @@ type Repository[C any, T any] interface {
 
 type Migrator[T any, C any] interface {
 	Init(ctx C) error
-	Migrate(ctx C) error
+	Migrate(ctx C, new Schema) error
 }
+
+type Watchable[T any, C any] interface {
+	Watch(ctx C, filter Filter) (chan<- Mutation[T], error)
+}
+
+type Mutation[T any] struct {
+	Add    *Add[T]
+	Update *UpdateFn[T]
+	Delete *Delete[T]
+}
+
+type Add[T any] []T
+type Update[T any] struct {
+	From T
+	To   T
+}
+type Delete[T any] []T

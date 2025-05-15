@@ -54,10 +54,10 @@ func (n *NumberField) Name() TypeName {
 }
 
 type IntegerField struct {
-	Minimum          *float64
-	Maximum          *float64
-	ExclusiveMinimum *float64
-	ExclusiveMaximum *float64
+	Minimum          *int64
+	Maximum          *int64
+	ExclusiveMinimum *int64
+	ExclusiveMaximum *int64
 }
 
 func (i *IntegerField) Name() TypeName {
