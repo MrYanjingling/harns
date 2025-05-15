@@ -24,13 +24,13 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.1
 	github.com/uber/jaeger-client-go v2.28.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.7.0
-	golang.org/x/mod v0.5.1
-	golang.org/x/sys v0.0.0-20210831042530-f4d43177bf5e
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	golang.org/x/mod v0.17.0
+	golang.org/x/sys v0.28.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0
 	k8s.io/client-go v0.23.0
@@ -40,10 +40,16 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 )
 
-require github.com/Masterminds/squirrel v1.5.4
+require (
+	github.com/Masterminds/squirrel v1.5.4
+	github.com/bytedance/sonic v1.13.2
+	github.com/lib/pq v1.10.9
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bytedance/sonic/loader v0.2.4 // indirect
+	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deepmap/oapi-codegen v1.6.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -55,7 +61,7 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.5 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
@@ -63,6 +69,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -74,17 +81,18 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.28.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.0 // indirect
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
+	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f // indirect
-	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.org/x/tools v0.1.6-0.20210820212750-d4cc65f0b2ff // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

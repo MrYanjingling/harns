@@ -20,11 +20,7 @@ func (s SqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 
 	builder := sq.Select(selects...).From(table)
 
-	if query.Filter != nil {
-		if exp, ok := query.Filter.(expression); ok {
-			builder = builder.Where(exp.toExp())
-		}
-	}
+	builder = s.applyFilter(query.Filter, builder)
 
 	if query.Sort != nil {
 		for field, order := range query.Sort {
@@ -52,6 +48,51 @@ func (s SqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 	}
 
 	return sql, args, nil
+}
+
+func (s SqlBuilder) buildInsert(table string, schema Schema, objects []Object) (string, []any, error) {
+	if len(objects) == 0 {
+		return "", nil, fmt.Errorf("no objects provided for insertion")
+	}
+
+	properties, err := schema.Properties()
+	if err != nil {
+		return "", nil, err
+	}
+
+	columns := make([]string, 0, len(properties))
+
+	for key := range properties {
+		columns = append(columns, key)
+	}
+
+	builder := sq.Insert(table).Columns(columns...)
+
+	for _, obj := range objects {
+		values := make([]any, 0, len(properties))
+		for key := range properties {
+			value := obj[key]
+			values = append(values, value)
+		}
+		builder = builder.Values(values...)
+	}
+	builder.Suffix("RETURNING 'id'")
+
+	sql, args, err := builder.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+
+	return sql, args, nil
+}
+
+func (s SqlBuilder) applyFilter(filter Filter, builder sq.SelectBuilder) sq.SelectBuilder {
+	if filter != nil {
+		if exp, ok := filter.(expression); ok {
+			builder = builder.Where(exp.toExp())
+		}
+	}
+	return builder
 }
 
 func (s SqlBuilder) selects(schema Schema, projection map[string]bool) ([]string, error) {
