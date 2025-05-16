@@ -5,8 +5,10 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+// TODO: support filter by json filed
 type dialect interface {
 	buildCreateTable(table string, schema Schema) (string, error)
+	parseJsonKey(key string) string
 }
 
 type sqlBuilder struct {
@@ -27,7 +29,7 @@ func (s sqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 
 	if query.Filter != nil {
 		if exp, ok := query.Filter.(expression); ok {
-			builder = builder.Where(exp.toExp())
+			builder = builder.Where(exp.toExp(s.dialect))
 		}
 	}
 
@@ -101,7 +103,7 @@ func (s sqlBuilder) buildClear(table string, schema Schema, filter Filter) (stri
 		return "", nil, fmt.Errorf("invalid filter for clear")
 	}
 	if exp, ok := filter.(expression); ok {
-		builder = builder.Where(exp.toExp())
+		builder = builder.Where(exp.toExp(s.dialect))
 	} else {
 		return "", nil, fmt.Errorf("invalid filter for clear")
 	}
@@ -118,7 +120,7 @@ func (s sqlBuilder) buildCount(table string, _ Schema, query *Query) (string, []
 
 	if query.Filter != nil {
 		if exp, ok := query.Filter.(expression); ok {
-			builder = builder.Where(exp.toExp())
+			builder = builder.Where(exp.toExp(s.dialect))
 		}
 	}
 
@@ -130,7 +132,7 @@ func (s sqlBuilder) buildCount(table string, _ Schema, query *Query) (string, []
 	return sql, args, nil
 }
 
-func (s sqlBuilder) selects(schema Schema, projection map[string]bool) ([]string, error) {
+func (s sqlBuilder) selects(schema Schema, projection map[string]struct{}) ([]string, error) {
 	properties, err := schema.Properties()
 	if err != nil {
 		return nil, err

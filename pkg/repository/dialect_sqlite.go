@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -36,6 +37,16 @@ func (d dialectSqlite) buildCreateTable(table string, schema Schema) (string, er
 
 	builder.WriteRune(')')
 	return builder.String(), nil
+}
+
+func (d dialectSqlite) parseJsonKey(key string) string {
+	idx := strings.IndexRune(key, '.')
+	if idx == -1 {
+		return key
+	}
+	column := key[:idx]
+	path := "$" + key[idx:]
+	return fmt.Sprintf("JSON_EXTRACT(%s,'%s')", column, path)
 }
 
 func buildField(builder *strings.Builder, name string, property Property) {

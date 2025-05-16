@@ -31,3 +31,19 @@ type Update[T any] struct {
 	To   T
 }
 type Delete[T any] []T
+
+type ExtendRepository[C any, T any] struct {
+	Repository[C, T]
+}
+
+func (e ExtendRepository[C, T]) GetById(ctx C, id any) (*T, error) {
+	q := Query{
+		Filter: &Binary{Key: "id", Op: &Eq{Value: id}},
+		Limit:  1,
+	}
+	results, err := e.Find(ctx, &q)
+	if err != nil || len(results) == 0 {
+		return nil, err
+	}
+	return &results[0], nil
+}

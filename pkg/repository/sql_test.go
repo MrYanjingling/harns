@@ -89,6 +89,21 @@ func TestFind(t *testing.T) {
 		}
 	})
 
+	t.Run("Find by json key", func(t *testing.T) {
+		query := &Query{
+			Filter: &Binary{Key: "labels.color", Op: &Eq{Value: "green"}},
+		}
+		foundUsers, err := repo.Find(ctx, query)
+		mustNil(err)
+		if len(foundUsers) != 1 {
+			t.Errorf("Expected 1 results, got %d", len(foundUsers))
+		}
+		foundUser := foundUsers[0]
+		if foundUser["name"] != "Li si" {
+			t.Errorf("Expected found 'Li si', got %s", foundUser["name"])
+		}
+	})
+
 }
 
 func createRepo(db *sql.DB) *SqlRepo {

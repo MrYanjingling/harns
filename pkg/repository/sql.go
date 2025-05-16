@@ -37,7 +37,7 @@ func (s *SqlRepo) Find(ctx SqlContext, query *Query) ([]Object, error) {
 		panic(err)
 	}
 
-	var objs []Object
+	objs := make([]Object, 0)
 	for rows.Next() {
 		obj := make(Object, len(columns))
 		values := make([]any, len(columns))

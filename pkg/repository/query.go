@@ -17,14 +17,14 @@ type Query struct {
 	Skip       uint64               `json:"skip,omitempty"`
 	Limit      uint64               `json:"limit,omitempty"`
 	Sort       map[string]SortOrder `json:"sort,omitempty"`
-	Projection map[string]bool      `json:"projection,omitempty"`
+	Projection map[string]struct{}  `json:"projection,omitempty"`
 	Distinct   bool                 `json:"distinct,omitempty"`
 }
 
 func NewQuery() *Query {
 	return &Query{
 		Sort:       make(map[string]SortOrder),
-		Projection: make(map[string]bool),
+		Projection: make(map[string]struct{}),
 	}
 }
 
