@@ -14,8 +14,8 @@ const (
 
 type Query struct {
 	Filter     Filter               `json:"filter,omitempty"`
-	Skip       *int                 `json:"skip,omitempty"`
-	Limit      *int                 `json:"limit,omitempty"`
+	Skip       uint64               `json:"skip,omitempty"`
+	Limit      uint64               `json:"limit,omitempty"`
 	Sort       map[string]SortOrder `json:"sort,omitempty"`
 	Projection map[string]bool      `json:"projection,omitempty"`
 	Distinct   bool                 `json:"distinct,omitempty"`
@@ -111,7 +111,7 @@ func (n *Ne) Test(key string, value Object) bool {
 	if !ok {
 		return true
 	}
-	return val != n.Value
+	return !eq(val, n.Value)
 }
 
 type Gt struct {
@@ -123,14 +123,7 @@ func (g *Gt) Test(key string, value Object) bool {
 	if !ok {
 		return false
 	}
-	switch v := val.(type) {
-	case int:
-		return v > g.Value.(int)
-	case float64:
-		return v > g.Value.(float64)
-	default:
-		return false
-	}
+	return gt(val, g.Value)
 }
 
 type Gte struct {
@@ -142,14 +135,7 @@ func (g *Gte) Test(key string, value Object) bool {
 	if !ok {
 		return false
 	}
-	switch v := val.(type) {
-	case int:
-		return v >= g.Value.(int)
-	case float64:
-		return v >= g.Value.(float64)
-	default:
-		return false
-	}
+	return gte(val, g.Value)
 }
 
 type Lt struct {
@@ -161,14 +147,7 @@ func (l *Lt) Test(key string, value Object) bool {
 	if !ok {
 		return false
 	}
-	switch v := val.(type) {
-	case int:
-		return v < l.Value.(int)
-	case float64:
-		return v < l.Value.(float64)
-	default:
-		return false
-	}
+	return lt(val, l.Value)
 }
 
 type Lte struct {
@@ -180,14 +159,7 @@ func (l *Lte) Test(key string, value Object) bool {
 	if !ok {
 		return false
 	}
-	switch v := val.(type) {
-	case int:
-		return v <= l.Value.(int)
-	case float64:
-		return v <= l.Value.(float64)
-	default:
-		return false
-	}
+	return lte(val, l.Value)
 }
 
 type Start string
@@ -265,7 +237,7 @@ func (i *In) Test(key string, value Object) bool {
 		return false
 	}
 	for _, v := range *i {
-		if v == val {
+		if eq(v, val) {
 			return true
 		}
 	}
@@ -280,7 +252,7 @@ func (n *Nin) Test(key string, value Object) bool {
 		return true
 	}
 	for _, v := range *n {
-		if v == val {
+		if eq(v, val) {
 			return false
 		}
 	}

@@ -5,14 +5,19 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-type Dialect interface {
+type dialect interface {
+	buildCreateTable(table string, schema Schema) (string, error)
 }
 
-type SqlBuilder struct {
-	Dialect
+type sqlBuilder struct {
+	dialect
 }
 
-func (s SqlBuilder) buildFind(table string, schema Schema, query *Query) (string, []any, error) {
+func (s sqlBuilder) buildFind(table string, schema Schema, query *Query) (string, []any, error) {
+	if query == nil {
+		return "", nil, fmt.Errorf("query requires not null")
+	}
+
 	selects, err := s.selects(schema, query.Projection)
 	if err != nil {
 		return "", nil, err
@@ -20,7 +25,11 @@ func (s SqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 
 	builder := sq.Select(selects...).From(table)
 
-	builder = s.applyFilter(query.Filter, builder)
+	if query.Filter != nil {
+		if exp, ok := query.Filter.(expression); ok {
+			builder = builder.Where(exp.toExp())
+		}
+	}
 
 	if query.Sort != nil {
 		for field, order := range query.Sort {
@@ -32,14 +41,14 @@ func (s SqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 		}
 	}
 
-	if query.Skip != nil {
-		builder.Offset(uint64(*query.Skip))
+	if query.Skip > 0 {
+		builder = builder.Offset(query.Skip)
 	}
-	if query.Limit != nil {
-		builder.Limit(uint64(*query.Limit))
+	if query.Limit > 0 {
+		builder = builder.Limit(query.Limit)
 	}
 	if query.Distinct {
-		builder.Distinct()
+		builder = builder.Distinct()
 	}
 
 	sql, args, err := builder.ToSql()
@@ -50,7 +59,7 @@ func (s SqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 	return sql, args, nil
 }
 
-func (s SqlBuilder) buildInsert(table string, schema Schema, objects []Object) (string, []any, error) {
+func (s sqlBuilder) buildInsert(table string, schema Schema, objects []Object) (string, []any, error) {
 	if len(objects) == 0 {
 		return "", nil, fmt.Errorf("no objects provided for insertion")
 	}
@@ -69,14 +78,14 @@ func (s SqlBuilder) buildInsert(table string, schema Schema, objects []Object) (
 	builder := sq.Insert(table).Columns(columns...)
 
 	for _, obj := range objects {
-		values := make([]any, 0, len(properties))
-		for key := range properties {
-			value := obj[key]
+		values := make([]any, 0, len(columns))
+		for _, column := range columns {
+			value := obj[column]
 			values = append(values, value)
 		}
 		builder = builder.Values(values...)
 	}
-	builder.Suffix("RETURNING 'id'")
+	builder = builder.Suffix("RETURNING 'id'")
 
 	sql, args, err := builder.ToSql()
 	if err != nil {
@@ -86,16 +95,42 @@ func (s SqlBuilder) buildInsert(table string, schema Schema, objects []Object) (
 	return sql, args, nil
 }
 
-func (s SqlBuilder) applyFilter(filter Filter, builder sq.SelectBuilder) sq.SelectBuilder {
-	if filter != nil {
-		if exp, ok := filter.(expression); ok {
+func (s sqlBuilder) buildClear(table string, schema Schema, filter Filter) (string, []any, error) {
+	builder := sq.Delete(table)
+	if filter == nil {
+		return "", nil, fmt.Errorf("invalid filter for clear")
+	}
+	if exp, ok := filter.(expression); ok {
+		builder = builder.Where(exp.toExp())
+	} else {
+		return "", nil, fmt.Errorf("invalid filter for clear")
+	}
+	return builder.ToSql()
+}
+
+func (s sqlBuilder) buildCount(table string, _ Schema, query *Query) (string, []any, error) {
+	if query == nil {
+		return "", nil, fmt.Errorf("query requires not null")
+	}
+
+	// TODO: support distinct
+	builder := sq.Select("COUNT(*)").From(table)
+
+	if query.Filter != nil {
+		if exp, ok := query.Filter.(expression); ok {
 			builder = builder.Where(exp.toExp())
 		}
 	}
-	return builder
+
+	sql, args, err := builder.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+
+	return sql, args, nil
 }
 
-func (s SqlBuilder) selects(schema Schema, projection map[string]bool) ([]string, error) {
+func (s sqlBuilder) selects(schema Schema, projection map[string]bool) ([]string, error) {
 	properties, err := schema.Properties()
 	if err != nil {
 		return nil, err

@@ -1,3 +1,6 @@
+# Thing
+
+```json
 {
     "name": "sensor",
     "tenant": "main",
@@ -9,16 +12,16 @@
     "createdTime": "2025-05-15 12:00:00.000",
     "updatedTime": "2025-05-15 12:00:00.000",
     "description": "this is s senssor thing",
-    "characteristics": [
-        {
+    "characteristics": {
+        "length": {
             "name": "长",
             "value": "33.3"
         },
-        {
+        "width": {
             "name": "宽",
             "value": "33.3"
         }
-    ],
+    },
     "combination": [
         {
             "thing": "fastUUid",
@@ -30,3 +33,4 @@
         }
     ]
 }
+```

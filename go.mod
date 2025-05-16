@@ -43,7 +43,7 @@ require (
 require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/bytedance/sonic v1.13.2
-	github.com/lib/pq v1.10.9
+	github.com/mattn/go-sqlite3 v1.14.28
 )
 
 require (
