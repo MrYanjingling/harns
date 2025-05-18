@@ -29,7 +29,7 @@ func (s sqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 
 	if query.Filter != nil {
 		if exp, ok := query.Filter.(expression); ok {
-			builder = builder.Where(exp.toExp(s.dialect))
+			builder = builder.Where(exp.toSql(s.dialect))
 		}
 	}
 
@@ -103,7 +103,7 @@ func (s sqlBuilder) buildClear(table string, schema Schema, filter Filter) (stri
 		return "", nil, fmt.Errorf("invalid filter for clear")
 	}
 	if exp, ok := filter.(expression); ok {
-		builder = builder.Where(exp.toExp(s.dialect))
+		builder = builder.Where(exp.toSql(s.dialect))
 	} else {
 		return "", nil, fmt.Errorf("invalid filter for clear")
 	}
@@ -120,7 +120,7 @@ func (s sqlBuilder) buildCount(table string, _ Schema, query *Query) (string, []
 
 	if query.Filter != nil {
 		if exp, ok := query.Filter.(expression); ok {
-			builder = builder.Where(exp.toExp(s.dialect))
+			builder = builder.Where(exp.toSql(s.dialect))
 		}
 	}
 

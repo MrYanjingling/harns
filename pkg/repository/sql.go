@@ -5,18 +5,17 @@ import (
 	"fmt"
 )
 
-type SqlRepo struct {
+type Repo struct {
 	sb sqlBuilder
 	db *sql.DB
+	tx *sql.Tx
 }
 
-type SqlContext struct {
-	schema Schema
-	table  string
-	tx     *sql.Tx
-}
+var (
+	_ Repository[Ctx, Object] = (*Repo)(nil)
+)
 
-func (s *SqlRepo) Find(ctx SqlContext, query *Query) ([]Object, error) {
+func (s *Repo) Find(ctx Ctx, query *Query) ([]Object, error) {
 	properties, err := ctx.schema.Properties()
 	if err != nil {
 		return nil, err
@@ -73,10 +72,12 @@ func (s *SqlRepo) Find(ctx SqlContext, query *Query) ([]Object, error) {
 	return objs, nil
 }
 
-func (s *SqlRepo) Insert(ctx SqlContext, items []Object) error {
-	tx := ctx.tx
+func (s *Repo) Insert(ctx Ctx, items []Object) error {
+	err := (error)(nil)
+	tx := s.tx
 	if tx == nil {
 		tx, _ = s.db.Begin()
+		defer rollbackIfErrFunc(err, tx)()
 	}
 
 	q, args, err := s.sb.buildInsert(ctx.table, ctx.schema, items)
@@ -85,7 +86,6 @@ func (s *SqlRepo) Insert(ctx SqlContext, items []Object) error {
 	}
 	rows, err := tx.Query(q, args...)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	defer rows.Close()
@@ -93,29 +93,38 @@ func (s *SqlRepo) Insert(ctx SqlContext, items []Object) error {
 	i := 0
 	for rows.Next() {
 		id := new(any)
-		err := rows.Scan(id)
+		err = rows.Scan(id)
 		if err != nil {
-			tx.Rollback()
 			return err
 		}
 		items[i]["id"] = id
 		i++
 	}
 
-	tx.Commit()
-
 	return nil
 }
 
-func (s *SqlRepo) Update(ctx SqlContext, fn UpdateFn[Object], filter Filter) (Object, error) {
+func rollbackIfErrFunc(err error, tx *sql.Tx) func() {
+	return func() {
+		if err == nil {
+			_ = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+	}
+}
+
+func (s *Repo) Update(ctx Ctx, fn UpdateFn[Object], filter Filter) (Object, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SqlRepo) Clear(ctx SqlContext, filter Filter) error {
-	tx := ctx.tx
+func (s *Repo) Clear(ctx Ctx, filter Filter) error {
+	err := (error)(nil)
+	tx := s.tx
 	if tx == nil {
 		tx, _ = s.db.Begin()
+		defer rollbackIfErrFunc(err, tx)()
 	}
 
 	q, args, err := s.sb.buildClear(ctx.table, ctx.schema, filter)
@@ -124,17 +133,16 @@ func (s *SqlRepo) Clear(ctx SqlContext, filter Filter) error {
 	}
 	result, err := tx.Exec(q, args)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
-	if affected, err := result.RowsAffected(); err != nil || affected == 0 {
+	affected, err := result.RowsAffected()
+	if err != nil || affected == 0 {
 		return fmt.Errorf("")
 	}
-	tx.Commit()
 	return nil
 }
 
-func (s *SqlRepo) Count(ctx SqlContext, query *Query) (uint64, error) {
+func (s *Repo) Count(ctx Ctx, query *Query) (uint64, error) {
 	q, args, err := s.sb.buildCount(ctx.table, ctx.schema, query)
 	if err != nil {
 		return 0, err
@@ -152,7 +160,7 @@ func (s *SqlRepo) Count(ctx SqlContext, query *Query) (uint64, error) {
 	return *count, nil
 }
 
-func (s *SqlRepo) Init(ctx SqlContext) error {
+func (s *Repo) Init(ctx Ctx) error {
 	q, err := s.sb.buildCreateTable(ctx.table, ctx.schema)
 	if err != nil {
 		return err
@@ -164,7 +172,7 @@ func (s *SqlRepo) Init(ctx SqlContext) error {
 	return nil
 }
 
-func (s *SqlRepo) Migrate(ctx SqlContext, new Schema) error {
+func (s *Repo) Migrate(ctx Ctx, new Schema) error {
 	//TODO implement me
 	panic("implement me")
 }

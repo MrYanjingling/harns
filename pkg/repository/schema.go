@@ -7,15 +7,11 @@ import (
 type Schema interface {
 	Properties() (map[string]Property, error)
 	Property(name string) (Property, error)
-	Title() *string
-	Description() *string
-	Required() ([]string, error)
 }
 
 type Property interface {
 	Type() Type
 	Default() any
-	Description() *string
 	Nullable() bool
 	ReadOnly() bool
 	Format() *string
@@ -171,38 +167,6 @@ func (j JsonSchema) Property(name string) (Property, error) {
 	return JsonProperty{*node}, nil
 }
 
-func (j JsonSchema) Title() *string {
-	s, err := j.Get("title").String()
-	if err != nil {
-		return new(string)
-	}
-	return &s
-}
-
-func (j JsonSchema) Description() *string {
-	s, err := j.Get("description").String()
-	if err != nil {
-		return new(string)
-	}
-	return &s
-}
-
-func (j JsonSchema) Required() ([]string, error) {
-	node, err := j.Get("required").ArrayUseNode()
-	if err != nil {
-		return nil, err
-	}
-	var result []string
-	for _, n := range node {
-		s, err := n.String()
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, s)
-	}
-	return result, nil
-}
-
 type JsonProperty struct {
 	ast.Node
 }
@@ -242,14 +206,6 @@ func (j JsonProperty) Default() any {
 		return nil
 	}
 	return defaultValue
-}
-
-func (j JsonProperty) Description() *string {
-	s, err := j.Get("description").String()
-	if err != nil {
-		return new(string)
-	}
-	return &s
 }
 
 func (j JsonProperty) Nullable() bool {

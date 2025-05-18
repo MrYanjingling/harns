@@ -14,7 +14,7 @@ func TestFind(t *testing.T) {
 
 	repo := createRepo(db)
 	schema := userSchema()
-	ctx := SqlContext{schema, "user", nil}
+	ctx := Ctx{schema, "user"}
 	mustNil(repo.Init(ctx))
 
 	users := []Object{
@@ -106,8 +106,8 @@ func TestFind(t *testing.T) {
 
 }
 
-func createRepo(db *sql.DB) *SqlRepo {
-	return &SqlRepo{
+func createRepo(db *sql.DB) *Repo {
+	return &Repo{
 		sb: sqlBuilder{
 			dialect: newDialectSqlite(),
 		},

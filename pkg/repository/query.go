@@ -33,6 +33,12 @@ type Filter interface {
 	ContainsField(key string) bool
 }
 
+var (
+	_ Filter = (And)(nil)
+	_ Filter = (Or)(nil)
+	_ Filter = (*Binary)(nil)
+)
+
 type And []Filter
 
 func (a And) Test(value Object) bool {
@@ -79,7 +85,8 @@ type Binary struct {
 }
 
 func (b *Binary) Test(value Object) bool {
-	return b.Op.Test(b.Key, value)
+	val := value[b.Key]
+	return b.Op.Test(val)
 }
 
 func (b *Binary) ContainsField(key string) bool {
@@ -87,16 +94,31 @@ func (b *Binary) ContainsField(key string) bool {
 }
 
 type Operator interface {
-	Test(key string, value Object) bool
+	Test(val any) bool
 }
+
+var (
+	_ Operator = (*Eq)(nil)
+	_ Operator = (*Ne)(nil)
+	_ Operator = (*Gte)(nil)
+	_ Operator = (*Gt)(nil)
+	_ Operator = (*Lte)(nil)
+	_ Operator = (*Lt)(nil)
+	_ Operator = (*In)(nil)
+	_ Operator = (*Nin)(nil)
+	_ Operator = (*Start)(nil)
+	_ Operator = (*End)(nil)
+	_ Operator = (*Contains)(nil)
+	_ Operator = (*Regexp)(nil)
+	_ Operator = (*Exist)(nil)
+)
 
 type Eq struct {
 	Value any
 }
 
-func (e *Eq) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (e *Eq) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	return val == e.Value
@@ -106,10 +128,9 @@ type Ne struct {
 	Value any
 }
 
-func (n *Ne) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
-		return true
+func (n *Ne) Test(val any) bool {
+	if val == nil {
+		return false
 	}
 	return !eq(val, n.Value)
 }
@@ -118,9 +139,8 @@ type Gt struct {
 	Value any
 }
 
-func (g *Gt) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (g *Gt) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	return gt(val, g.Value)
@@ -130,9 +150,8 @@ type Gte struct {
 	Value any
 }
 
-func (g *Gte) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (g *Gte) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	return gte(val, g.Value)
@@ -142,9 +161,8 @@ type Lt struct {
 	Value any
 }
 
-func (l *Lt) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (l *Lt) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	return lt(val, l.Value)
@@ -154,9 +172,8 @@ type Lte struct {
 	Value any
 }
 
-func (l *Lte) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (l *Lte) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	return lte(val, l.Value)
@@ -164,9 +181,8 @@ func (l *Lte) Test(key string, value Object) bool {
 
 type Start string
 
-func (s *Start) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (s *Start) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	str, ok := val.(string)
@@ -178,9 +194,8 @@ func (s *Start) Test(key string, value Object) bool {
 
 type End string
 
-func (e *End) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (e *End) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	str, ok := val.(string)
@@ -192,9 +207,8 @@ func (e *End) Test(key string, value Object) bool {
 
 type Contains string
 
-func (c *Contains) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (c *Contains) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	str, ok := val.(string)
@@ -206,9 +220,8 @@ func (c *Contains) Test(key string, value Object) bool {
 
 type Regexp string
 
-func (r *Regexp) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (r *Regexp) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	str, ok := val.(string)
@@ -224,16 +237,14 @@ func (r *Regexp) Test(key string, value Object) bool {
 
 type Exist bool
 
-func (e *Exist) Test(key string, value Object) bool {
-	_, ok := value[key]
-	return ok == bool(*e)
+func (e *Exist) Test(val any) bool {
+	return val != nil == bool(*e)
 }
 
 type In []any
 
-func (i *In) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (i *In) Test(val any) bool {
+	if val == nil {
 		return false
 	}
 	for _, v := range *i {
@@ -246,9 +257,8 @@ func (i *In) Test(key string, value Object) bool {
 
 type Nin []any
 
-func (n *Nin) Test(key string, value Object) bool {
-	val, ok := value[key]
-	if !ok {
+func (n *Nin) Test(val any) bool {
+	if val == nil {
 		return true
 	}
 	for _, v := range *n {
