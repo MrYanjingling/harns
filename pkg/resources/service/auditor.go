@@ -31,7 +31,7 @@ func (a Auditor) BeforeUpdate(schema repo.Schema, old *repo.Record, new repo.Rec
 	if *property.Format() != "date-time" {
 		return nil
 	}
-	now := time.Now().Format("YYYY-MM-DDTHH:MM:SS.SSSZ")
+	now := time.Now().Format(time.RFC3339)
 	new.Set("updatedTime", now)
 
 	return nil

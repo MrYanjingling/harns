@@ -6,18 +6,18 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type repo struct {
+type sqlRepo struct {
 	sb sqlBuilder
 	db *sql.DB
 	tx *sql.Tx
 }
 
-func NewSqlite(dsn string) Repository[Context, Record] {
+func NewSqlite(dsn string) Repo {
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		panic(err)
 	}
-	return &repo{
+	return &sqlRepo{
 		sb: sqlBuilder{
 			dialect: dialectSqlite{},
 		},
@@ -26,10 +26,10 @@ func NewSqlite(dsn string) Repository[Context, Record] {
 }
 
 var (
-	_ Repository[Context, Record] = (*repo)(nil)
+	_ Repo = (*sqlRepo)(nil)
 )
 
-func (s *repo) Find(ctx Context, query *Query) ([]Record, error) {
+func (s *sqlRepo) Find(ctx Context, query *Query) ([]Record, error) {
 	properties, err := ctx.Schema.Properties()
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (s *repo) Find(ctx Context, query *Query) ([]Record, error) {
 	return objs, nil
 }
 
-func (s *repo) Create(ctx Context, items []Record) error {
+func (s *sqlRepo) Create(ctx Context, items []Record) error {
 	err := (error)(nil)
 	q, args, err := s.sb.buildInsert(ctx.Name, ctx.Schema, items)
 	if err != nil {
@@ -127,7 +127,7 @@ func (s *repo) Create(ctx Context, items []Record) error {
 	return nil
 }
 
-func (s *repo) Update(ctx Context, fn UpdateFn[Record], filter Filter) (Record, error) {
+func (s *sqlRepo) Update(ctx Context, fn UpdateFn[Record], filter Filter) (Record, error) {
 	find, err := s.Find(ctx, &Query{Filter: filter, Limit: 1})
 	if err != nil || len(find) == 0 {
 		return nil, err
@@ -159,7 +159,7 @@ func (s *repo) Update(ctx Context, fn UpdateFn[Record], filter Filter) (Record, 
 	return fresh, nil
 }
 
-func (s *repo) Clear(ctx Context, filter Filter) error {
+func (s *sqlRepo) Clear(ctx Context, filter Filter) error {
 	err := (error)(nil)
 
 	q, args, err := s.sb.buildClear(ctx.Name, ctx.Schema, filter)
@@ -177,7 +177,7 @@ func (s *repo) Clear(ctx Context, filter Filter) error {
 	return nil
 }
 
-func (s *repo) Count(ctx Context, query *Query) (uint64, error) {
+func (s *sqlRepo) Count(ctx Context, query *Query) (uint64, error) {
 	q, args, err := s.sb.buildCount(ctx.Name, ctx.Schema, query)
 	if err != nil {
 		return 0, err
@@ -195,7 +195,7 @@ func (s *repo) Count(ctx Context, query *Query) (uint64, error) {
 	return *count, nil
 }
 
-func (s *repo) Init(ctx Context) error {
+func (s *sqlRepo) Init(ctx Context) error {
 	q, err := s.sb.buildCreateTable(ctx.Name, ctx.Schema)
 	if err != nil {
 		return err
@@ -207,12 +207,12 @@ func (s *repo) Init(ctx Context) error {
 	return nil
 }
 
-func (s *repo) Migrate(ctx Context, new Schema) error {
+func (s *sqlRepo) Migrate(ctx Context, new Schema) error {
 	//TODO implement me
 	return nil
 }
 
-func (s *repo) Watch(ctx Context, filter Filter) (chan<- Mutation[Record], error) {
+func (s *sqlRepo) Watch(ctx Context, filter Filter) (chan<- Mutation[Record], error) {
 	//TODO implement me
 	return nil, nil
 }

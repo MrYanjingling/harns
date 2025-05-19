@@ -56,3 +56,5 @@ type Update[T Record] struct {
 	To   T
 }
 type Delete[T Record] []T
+
+type Repo Repository[Context, Record]

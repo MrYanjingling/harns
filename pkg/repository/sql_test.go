@@ -106,8 +106,8 @@ func TestFind(t *testing.T) {
 
 }
 
-func createRepo(db *sql.DB) *repo {
-	return &repo{
+func createRepo(db *sql.DB) *sqlRepo {
+	return &sqlRepo{
 		sb: sqlBuilder{
 			dialect: dialectSqlite{},
 		},
