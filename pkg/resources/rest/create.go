@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-func Create(rc repo.Creator[resources.ResourceName, repo.Object]) gin.HandlerFunc {
+func Create(rc repo.Creator[resources.ResourceName, repo.Record]) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer c.Request.Body.Close()
 		objs := make([]repo.Object, 0)
@@ -24,7 +24,13 @@ func Create(rc repo.Creator[resources.ResourceName, repo.Object]) gin.HandlerFun
 
 		resource := c.Param("resource")
 
-		err := rc.Create(resources.ResourceName(resource), objs)
+		records := make([]repo.Record, 0, len(objs))
+		for _, obj := range objs {
+			record := repo.Record(obj)
+			records = append(records, record)
+		}
+
+		err := rc.Create(resources.ResourceName(resource), records)
 		if err != nil {
 			switch {
 			case errors.Is(err, apis.ErrMismatch):

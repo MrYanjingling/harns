@@ -29,7 +29,7 @@ func NewQuery() *Query {
 }
 
 type Filter interface {
-	Test(value Object) bool
+	Test(record Record) bool
 	ContainsField(key string) bool
 }
 
@@ -41,9 +41,9 @@ var (
 
 type And []Filter
 
-func (a And) Test(value Object) bool {
+func (a And) Test(record Record) bool {
 	for _, filter := range a {
-		if !filter.Test(value) {
+		if !filter.Test(record) {
 			return false
 		}
 	}
@@ -61,9 +61,9 @@ func (a And) ContainsField(key string) bool {
 
 type Or []Filter
 
-func (o Or) Test(value Object) bool {
+func (o Or) Test(record Record) bool {
 	for _, filter := range o {
-		if filter.Test(value) {
+		if filter.Test(record) {
 			return true
 		}
 	}
@@ -84,8 +84,8 @@ type Binary struct {
 	Op  Operator
 }
 
-func (b *Binary) Test(value Object) bool {
-	val := value[b.Key]
+func (b *Binary) Test(record Record) bool {
+	val, _ := record.Get(b.Key)
 	return b.Op.Test(val)
 }
 

@@ -8,13 +8,13 @@ import (
 
 type Service struct {
 	resources     map[res.ResourceName]res.Resource
-	repo          repo.Repository[repo.Context, repo.Object]
+	repo          repo.Repository[repo.Context, repo.Record]
 	beforeInserts []BeforeInsert
 	beforeUpdates []BeforeUpdate
-	watchers      map[res.ResourceName]map[repo.Filter]chan<- repo.Mutation[repo.Object]
+	watchers      map[res.ResourceName]map[repo.Filter]chan<- repo.Mutation[repo.Record]
 }
 
-func New(repo repo.Repository[repo.Context, repo.Object]) Service {
+func New(repo repo.Repository[repo.Context, repo.Record]) Service {
 	return Service{
 		resources:     make(map[res.ResourceName]res.Resource),
 		repo:          repo,
@@ -32,10 +32,10 @@ func (s *Service) AddResource(name res.ResourceName, resource res.Resource) {
 }
 
 var (
-	_ repo.Repository[res.ResourceName, repo.Object] = (*Service)(nil)
+	_ repo.Repository[res.ResourceName, repo.Record] = (*Service)(nil)
 )
 
-func (s *Service) Find(ctx res.ResourceName, query *repo.Query) ([]repo.Object, error) {
+func (s *Service) Find(ctx res.ResourceName, query *repo.Query) ([]repo.Record, error) {
 	repoCtx, err := s.getContext(ctx)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (s *Service) Find(ctx res.ResourceName, query *repo.Query) ([]repo.Object, 
 	return s.repo.Find(repoCtx, query)
 }
 
-func (s *Service) Create(ctx res.ResourceName, items []repo.Object) error {
+func (s *Service) Create(ctx res.ResourceName, items []repo.Record) error {
 	repoCtx, err := s.getContext(ctx)
 	if err != nil {
 		return err
@@ -59,13 +59,13 @@ func (s *Service) Create(ctx res.ResourceName, items []repo.Object) error {
 	return s.repo.Create(repoCtx, items)
 }
 
-func (s *Service) Update(ctx res.ResourceName, fn repo.UpdateFn[repo.Object], filter repo.Filter) (repo.Object, error) {
+func (s *Service) Update(ctx res.ResourceName, fn repo.UpdateFn[repo.Record], filter repo.Filter) (repo.Record, error) {
 	repoCtx, err := s.getContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	mutate := func(old *repo.Object) (repo.Object, error) {
+	mutate := func(old *repo.Record) (repo.Record, error) {
 		fresh, e := fn(old)
 
 		for _, bu := range s.beforeUpdates {
@@ -122,8 +122,8 @@ func (s *Service) Migrate(ctx res.ResourceName, new repo.Schema) error {
 	panic("implement me")
 }
 
-func (s *Service) Watch(ctx res.ResourceName, filter repo.Filter) (chan<- repo.Mutation[repo.Object], error) {
-	ch := make(chan repo.Mutation[repo.Object], 1)
+func (s *Service) Watch(ctx res.ResourceName, filter repo.Filter) (chan<- repo.Mutation[repo.Record], error) {
+	ch := make(chan repo.Mutation[repo.Record], 1)
 
 	return ch, nil
 }

@@ -11,7 +11,7 @@ func Resource() (resources.ResourceName, resources.Resource) {
 	if err != nil {
 		panic(err)
 	}
-	return "thingTypes", resources.Resource{
+	return "things", resources.Resource{
 		Table: "thing",
 		Schema: repository.JsonSchema{
 			Node: schema,

@@ -5,7 +5,23 @@ import (
 	"encoding/json"
 )
 
+type Record interface {
+	Get(string) (any, bool)
+	Set(string, any)
+}
+
 type Object map[string]any
+
+func (o Object) Get(key string) (any, bool) {
+	if val, ok := o[key]; ok {
+		return val, true
+	}
+	return nil, false
+}
+
+func (o Object) Set(key string, val any) {
+	o[key] = val
+}
 
 func (o Object) Value() (driver.Value, error) {
 	if o == nil {

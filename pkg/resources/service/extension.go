@@ -3,8 +3,8 @@ package service
 import repo "lightiot/pkg/repository"
 
 type BeforeInsert interface {
-	BeforeInsert(schema repo.Schema, objs []repo.Object) error
+	BeforeInsert(schema repo.Schema, objs []repo.Record) error
 }
 type BeforeUpdate interface {
-	BeforeUpdate(schema repo.Schema, old *repo.Object, new repo.Object) error
+	BeforeUpdate(schema repo.Schema, old *repo.Record, new repo.Record) error
 }

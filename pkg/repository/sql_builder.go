@@ -61,9 +61,9 @@ func (s sqlBuilder) buildFind(table string, schema Schema, query *Query) (string
 	return sql, args, nil
 }
 
-func (s sqlBuilder) buildInsert(table string, schema Schema, objects []Object) (string, []any, error) {
-	if len(objects) == 0 {
-		return "", nil, fmt.Errorf("no objects provided for insertion")
+func (s sqlBuilder) buildInsert(table string, schema Schema, records []Record) (string, []any, error) {
+	if len(records) == 0 {
+		return "", nil, fmt.Errorf("no records provided for insertion")
 	}
 
 	properties, err := schema.Properties()
@@ -79,10 +79,10 @@ func (s sqlBuilder) buildInsert(table string, schema Schema, objects []Object) (
 
 	builder := sq.Insert(table).Columns(columns...)
 
-	for _, obj := range objects {
+	for _, record := range records {
 		values := make([]any, 0, len(columns))
 		for _, column := range columns {
-			value := obj[column]
+			value, _ := record.Get(column)
 			values = append(values, value)
 		}
 		builder = builder.Values(values...)
@@ -97,13 +97,20 @@ func (s sqlBuilder) buildInsert(table string, schema Schema, objects []Object) (
 	return sql, args, nil
 }
 
-func (s sqlBuilder) buildUpdate(table string, schema Schema, old Object, new Object, filter Filter) (string, []any, error) {
+func (s sqlBuilder) buildUpdate(table string, schema Schema, old Record, new Record, filter Filter) (string, []any, error) {
+	properties, err := schema.Properties()
+	if err != nil {
+		return "", nil, err
+	}
 	builder := sq.Update(table)
 
 	updates := make(map[string]any)
-	for key, value := range new {
-		if _, ok := old[key]; ok && !eq(old[key], value) {
-			updates[key] = value
+
+	for key := range properties {
+		oldVal, _ := old.Get(key)
+		newVal, hasNew := new.Get(key)
+		if hasNew && !eq(oldVal, newVal) {
+			updates[key] = newVal
 		}
 	}
 

@@ -17,25 +17,25 @@ func TestFind(t *testing.T) {
 	ctx := Context{schema, "user"}
 	mustNil(repo.Init(ctx))
 
-	users := []Object{
-		{
+	users := []Record{
+		Record(Object{
 			"name":   "Zhang san",
 			"age":    22,
 			"labels": Object{"color": "red", "height": 180},
 			"tags":   Array{"younger", "tall"},
-		},
-		{
+		}),
+		Record(Object{
 			"name":   "Li si",
 			"age":    25,
 			"labels": Object{"color": "green", "weight": 120},
 			"tags":   Array{"fashion"},
-		},
-		{
+		}),
+		Record(Object{
 			"name":   "Wang wu",
 			"age":    30,
 			"labels": Object{"color": "blue", "height": 150},
 			"tags":   Array{"older", "short"},
-		},
+		}),
 	}
 
 	t.Run("Create some tests data", func(t *testing.T) {
@@ -73,8 +73,8 @@ func TestFind(t *testing.T) {
 		if len(foundUsers) != len(users) {
 			t.Errorf("Expected %d results, got %d", len(users), len(foundUsers))
 		}
-		if foundUsers[0]["name"] != "Zhang san" {
-			t.Errorf("Expected 'Zhang san' to be first, got %s", foundUsers[0]["name"])
+		if val, ok := foundUsers[0].Get("name"); !ok || val != "Zhang san" {
+			t.Errorf("Expected 'Zhang san' to be first, got %s", val)
 		}
 	})
 
@@ -99,8 +99,8 @@ func TestFind(t *testing.T) {
 			t.Errorf("Expected 1 results, got %d", len(foundUsers))
 		}
 		foundUser := foundUsers[0]
-		if foundUser["name"] != "Li si" {
-			t.Errorf("Expected found 'Li si', got %s", foundUser["name"])
+		if val, ok := foundUser.Get("name"); !ok || val != "Li si" {
+			t.Errorf("Expected found 'Li si', got %s", val)
 		}
 	})
 

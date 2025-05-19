@@ -12,7 +12,7 @@ type repo struct {
 	tx *sql.Tx
 }
 
-func NewSqlite(dsn string) Repository[Context, Object] {
+func NewSqlite(dsn string) Repository[Context, Record] {
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		panic(err)
@@ -26,10 +26,10 @@ func NewSqlite(dsn string) Repository[Context, Object] {
 }
 
 var (
-	_ Repository[Context, Object] = (*repo)(nil)
+	_ Repository[Context, Record] = (*repo)(nil)
 )
 
-func (s *repo) Find(ctx Context, query *Query) ([]Object, error) {
+func (s *repo) Find(ctx Context, query *Query) ([]Record, error) {
 	properties, err := ctx.Schema.Properties()
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (s *repo) Find(ctx Context, query *Query) ([]Object, error) {
 		panic(err)
 	}
 
-	objs := make([]Object, 0)
+	objs := make([]Record, 0)
 	for rows.Next() {
 		obj := make(Object, len(columns))
 		values := make([]any, len(columns))
@@ -91,7 +91,7 @@ func (s *repo) Find(ctx Context, query *Query) ([]Object, error) {
 	return objs, nil
 }
 
-func (s *repo) Create(ctx Context, items []Object) error {
+func (s *repo) Create(ctx Context, items []Record) error {
 	err := (error)(nil)
 	q, args, err := s.sb.buildInsert(ctx.Name, ctx.Schema, items)
 	if err != nil {
@@ -120,14 +120,14 @@ func (s *repo) Create(ctx Context, items []Object) error {
 		if err != nil {
 			return err
 		}
-		items[i]["id"] = id
+		items[i].Set("id", id)
 		i++
 	}
 
 	return nil
 }
 
-func (s *repo) Update(ctx Context, fn UpdateFn[Object], filter Filter) (Object, error) {
+func (s *repo) Update(ctx Context, fn UpdateFn[Record], filter Filter) (Record, error) {
 	find, err := s.Find(ctx, &Query{Filter: filter, Limit: 1})
 	if err != nil || len(find) == 0 {
 		return nil, err
@@ -212,7 +212,7 @@ func (s *repo) Migrate(ctx Context, new Schema) error {
 	return nil
 }
 
-func (s *repo) Watch(ctx Context, filter Filter) (chan<- Mutation[Object], error) {
+func (s *repo) Watch(ctx Context, filter Filter) (chan<- Mutation[Record], error) {
 	//TODO implement me
 	return nil, nil
 }
