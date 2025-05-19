@@ -1,9 +1,5 @@
 package repository
 
-func newDialectPostgres() dialect {
-	return dialectPostgres{}
-}
-
 type dialectPostgres struct{}
 
 func (d dialectPostgres) buildCreateTable(table string, schema Schema) (string, error) {

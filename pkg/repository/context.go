@@ -1,6 +1,6 @@
 package repository
 
-type Ctx struct {
-	schema Schema
-	table  string
+type Context struct {
+	Schema Schema
+	Name   string
 }

@@ -97,15 +97,49 @@ func (s sqlBuilder) buildInsert(table string, schema Schema, objects []Object) (
 	return sql, args, nil
 }
 
+func (s sqlBuilder) buildUpdate(table string, schema Schema, old Object, new Object, filter Filter) (string, []any, error) {
+	builder := sq.Update(table)
+
+	updates := make(map[string]any)
+	for key, value := range new {
+		if _, ok := old[key]; ok && !eq(old[key], value) {
+			updates[key] = value
+		}
+	}
+
+	if len(updates) == 0 {
+		return "", nil, ErrNoFieldsToUpdate
+	}
+
+	builder = builder.SetMap(updates)
+
+	if filter == nil {
+		return "", nil, ErrInvalidFilter
+	}
+
+	if exp, ok := filter.(expression); ok {
+		builder = builder.Where(exp.toSql(s.dialect))
+	} else {
+		return "", nil, ErrInvalidFilter
+	}
+
+	sql, args, err := builder.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+
+	return sql, args, nil
+}
+
 func (s sqlBuilder) buildClear(table string, schema Schema, filter Filter) (string, []any, error) {
 	builder := sq.Delete(table)
 	if filter == nil {
-		return "", nil, fmt.Errorf("invalid filter for clear")
+		return "", nil, ErrInvalidFilter
 	}
 	if exp, ok := filter.(expression); ok {
 		builder = builder.Where(exp.toSql(s.dialect))
 	} else {
-		return "", nil, fmt.Errorf("invalid filter for clear")
+		return "", nil, ErrInvalidFilter
 	}
 	return builder.ToSql()
 }

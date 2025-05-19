@@ -14,7 +14,7 @@ func TestFind(t *testing.T) {
 
 	repo := createRepo(db)
 	schema := userSchema()
-	ctx := Ctx{schema, "user"}
+	ctx := Context{schema, "user"}
 	mustNil(repo.Init(ctx))
 
 	users := []Object{
@@ -38,8 +38,8 @@ func TestFind(t *testing.T) {
 		},
 	}
 
-	t.Run("Insert some tests data", func(t *testing.T) {
-		err := repo.Insert(ctx, users)
+	t.Run("Create some tests data", func(t *testing.T) {
+		err := repo.Create(ctx, users)
 		mustNil(err)
 	})
 
@@ -106,10 +106,10 @@ func TestFind(t *testing.T) {
 
 }
 
-func createRepo(db *sql.DB) *Repo {
-	return &Repo{
+func createRepo(db *sql.DB) *repo {
+	return &repo{
 		sb: sqlBuilder{
-			dialect: newDialectSqlite(),
+			dialect: dialectSqlite{},
 		},
 		db: db,
 	}
@@ -133,7 +133,7 @@ func mustNil(err error) {
 func userSchema() Schema {
 	node, err := sonic.Get([]byte(`
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$Schema": "http://json-Schema.org/draft-07/Schema#",
     "title": "user",
     "type": "object",
     "properties": {

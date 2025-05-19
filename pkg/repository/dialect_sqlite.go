@@ -5,10 +5,6 @@ import (
 	"strings"
 )
 
-func newDialectSqlite() dialect {
-	return dialectSqlite{}
-}
-
 type dialectSqlite struct{}
 
 func (d dialectSqlite) buildCreateTable(table string, schema Schema) (string, error) {
