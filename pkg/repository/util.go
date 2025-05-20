@@ -1,136 +1,53 @@
 package repository
 
 import (
-	"reflect"
+	"encoding/json"
+	"fmt"
+	"github.com/shopspring/decimal"
 )
 
-// TODO remove reflect
-
 func eq(x any, y any) bool {
-	vx := reflect.ValueOf(x)
-	vy := reflect.ValueOf(y)
-
-	if vx.Type() != vy.Type() {
-		if vx.Type().ConvertibleTo(vy.Type()) {
-			vx = vx.Convert(vy.Type())
-		} else if vy.Type().ConvertibleTo(vx.Type()) {
-			vy = vy.Convert(vx.Type())
-		} else {
+	xBytes, xErr := json.Marshal(x)
+	if xErr != nil {
+		return false
+	}
+	yBytes, yErr := json.Marshal(y)
+	if yErr != nil {
+		return false
+	}
+	for i, xb := range xBytes {
+		yb := yBytes[i]
+		if xb != yb {
 			return false
 		}
 	}
-
-	return vx.Interface() == vy.Interface()
+	return true
 }
 
 func lt(x any, y any) bool {
-	vx := reflect.ValueOf(x)
-	vy := reflect.ValueOf(y)
-
-	if vx.Type() != vy.Type() {
-		if vx.Type().ConvertibleTo(vy.Type()) {
-			vx = vx.Convert(vy.Type())
-		} else if vy.Type().ConvertibleTo(vx.Type()) {
-			vy = vy.Convert(vx.Type())
-		} else {
-			return false
-		}
-	}
-
-	switch vx.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return vx.Int() < vy.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return vx.Uint() < vy.Uint()
-	case reflect.Float32, reflect.Float64:
-		return vx.Float() < vy.Float()
-	case reflect.String:
-		return vx.String() < vy.String()
-	default:
-		return false
-	}
+	return compareAny(x, y) < 0
 }
 
 func lte(x any, y any) bool {
-	vx := reflect.ValueOf(x)
-	vy := reflect.ValueOf(y)
-
-	if vx.Type() != vy.Type() {
-		if vx.Type().ConvertibleTo(vy.Type()) {
-			vx = vx.Convert(vy.Type())
-		} else if vy.Type().ConvertibleTo(vx.Type()) {
-			vy = vy.Convert(vx.Type())
-		} else {
-			return false
-		}
-	}
-
-	switch vx.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return vx.Int() <= vy.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return vx.Uint() <= vy.Uint()
-	case reflect.Float32, reflect.Float64:
-		return vx.Float() <= vy.Float()
-	case reflect.String:
-		return vx.String() <= vy.String()
-	default:
-		return false
-	}
+	return eq(x, y) || compareAny(x, y) < 0
 }
 
 func gt(x any, y any) bool {
-	vx := reflect.ValueOf(x)
-	vy := reflect.ValueOf(y)
-
-	if vx.Type() != vy.Type() {
-		if vx.Type().ConvertibleTo(vy.Type()) {
-			vx = vx.Convert(vy.Type())
-		} else if vy.Type().ConvertibleTo(vx.Type()) {
-			vy = vy.Convert(vx.Type())
-		} else {
-			return false
-		}
-	}
-
-	switch vx.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return vx.Int() > vy.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return vx.Uint() > vy.Uint()
-	case reflect.Float32, reflect.Float64:
-		return vx.Float() > vy.Float()
-	case reflect.String:
-		return vx.String() > vy.String()
-	default:
-		return false
-	}
+	return compareAny(x, y) < 0
 }
 
 func gte(x any, y any) bool {
-	vx := reflect.ValueOf(x)
-	vy := reflect.ValueOf(y)
+	return eq(x, y) || compareAny(x, y) > 0
+}
 
-	if vx.Type() != vy.Type() {
-		if vx.Type().ConvertibleTo(vy.Type()) {
-			vx = vx.Convert(vy.Type())
-		} else if vy.Type().ConvertibleTo(vx.Type()) {
-			vy = vy.Convert(vx.Type())
-		} else {
-			return false
-		}
+func compareAny(a, b any) int {
+	da, err := decimal.NewFromString(fmt.Sprintf("%v", a))
+	if err != nil {
+		return 0
 	}
-
-	switch vx.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return vx.Int() >= vy.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return vx.Uint() >= vy.Uint()
-	case reflect.Float32, reflect.Float64:
-		return vx.Float() >= vy.Float()
-	case reflect.String:
-		return vx.String() >= vy.String()
-	default:
-		return false
+	db, err := decimal.NewFromString(fmt.Sprintf("%v", b))
+	if err != nil {
+		return 0
 	}
+	return da.Cmp(db)
 }

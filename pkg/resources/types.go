@@ -1,12 +1,11 @@
 package resources
 
 import (
-	"fmt"
 	"github.com/bytedance/sonic"
+	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
 	"lightiot/pkg/apis/response"
 	repo "lightiot/pkg/repository"
-	"strings"
 )
 
 type ResourceName string
@@ -58,17 +57,12 @@ func WithJsonSchema(jsonschema []byte) Option {
 				return nil
 			}
 
-			sb := strings.Builder{}
-
-			for i, err := range res.Errors() {
-				if i != 0 {
-					sb.WriteRune(';')
-					sb.WriteRune('\n')
-				}
-				sb.WriteString(err.String())
+			errs := make([]error, 0, len(res.Errors()))
+			for _, e := range res.Errors() {
+				errs = append(errs, errors.Errorf("%s: %s", e.Field(), e.Description()))
 			}
 
-			return response.ErrInvalidValue(fmt.Errorf(sb.String()))
+			return response.NewMultiError(errs...)
 		}
 
 		resource.Schema = repo.JsonSchema{

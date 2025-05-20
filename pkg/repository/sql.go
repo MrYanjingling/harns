@@ -134,7 +134,7 @@ func (s *sqlRepo) Update(ctx Context, fn UpdateFn[Record], filter Filter) (Recor
 	}
 	old := find[0]
 
-	fresh, err := fn(old)
+	fresh, err := fn(old.DeepCopy())
 	if err != nil {
 		return nil, err
 	}

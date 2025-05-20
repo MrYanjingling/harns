@@ -8,9 +8,12 @@ import (
 type Record interface {
 	Get(string) (any, bool)
 	Set(string, any)
+	DeepCopy() Record
 }
 
 type Object map[string]any
+
+var _ Record = (Object)(nil)
 
 func (o Object) Get(key string) (any, bool) {
 	if val, ok := o[key]; ok {
@@ -21,6 +24,15 @@ func (o Object) Get(key string) (any, bool) {
 
 func (o Object) Set(key string, val any) {
 	o[key] = val
+}
+
+func (o Object) DeepCopy() Record {
+	// actually shadow copy
+	copyMap := make(Object)
+	for k, v := range o {
+		copyMap[k] = v
+	}
+	return copyMap
 }
 
 func (o Object) Value() (driver.Value, error) {

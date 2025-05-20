@@ -191,7 +191,7 @@ func TestUpdate(t *testing.T) {
 			name, _ := user.Get("name")
 			switch name {
 			case "Zhang san":
-				if age, ok := user.Get("age"); !ok || age != 23 {
+				if age, ok := user.Get("age"); !ok || !eq(age, 23) {
 					t.Errorf("Expected age 23 for Zhang san, got %v", age)
 				}
 			case "Li si":

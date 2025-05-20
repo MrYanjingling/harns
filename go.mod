@@ -43,7 +43,9 @@ require (
 require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/bytedance/sonic v1.13.2
+	github.com/google/go-cmp v0.6.0
 	github.com/mattn/go-sqlite3 v1.14.28
+	github.com/shopspring/decimal v1.4.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 )
 
@@ -62,7 +64,6 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect

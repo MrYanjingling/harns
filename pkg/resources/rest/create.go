@@ -2,17 +2,17 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"lightiot/pkg/apis"
 	"lightiot/pkg/apis/response"
 	repo "lightiot/pkg/repository"
-	"lightiot/pkg/resources"
+	res "lightiot/pkg/resources"
 	"net/http"
 )
 
-func Create(rc repo.Creator[resources.ResourceName, repo.Record]) gin.HandlerFunc {
+func Create(rc repo.Creator[res.ResourceName, repo.Record]) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer c.Request.Body.Close()
 		objs := make([]repo.Object, 0)
@@ -30,13 +30,16 @@ func Create(rc repo.Creator[resources.ResourceName, repo.Record]) gin.HandlerFun
 			records = append(records, record)
 		}
 
-		err := rc.Create(resources.ResourceName(resource), records)
+		err := rc.Create(res.ResourceName(resource), records)
 		if err != nil {
 			switch {
 			case errors.Is(err, apis.ErrMismatch):
 				c.Status(http.StatusPreconditionFailed)
 			default:
-				if response.IsResponseError(err) {
+				var e *response.MultiError
+				if errors.As(err, &e) {
+					c.JSON(http.StatusBadRequest, err)
+				} else if response.IsResponseError(err) {
 					c.JSON(http.StatusBadRequest, response.NewMultiError(err))
 				} else {
 					c.Status(http.StatusInternalServerError)
