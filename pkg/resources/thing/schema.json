@@ -1,0 +1,131 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the thing.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "tenant": {
+            "type": "string",
+            "description": "The tenant ID associated with the thing.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "id": {
+            "type": "string",
+            "description": "The unique identifier for the thing.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "parentId": {
+            "type": "string",
+            "description": "The ID of the parent thing, if any.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "version": {
+            "type": "string",
+            "description": "The version of the thing.",
+            "pattern": "^\\d*$"
+        },
+        "createdBy": {
+            "type": "string",
+            "description": "The user who created the thing.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "updatedBy": {
+            "type": "string",
+            "description": "The user who last updated the thing.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "createdTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the thing was created.",
+            "readOnly": true
+        },
+        "updatedTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the thing was last updated.",
+            "readOnly": true
+        },
+        "description": {
+            "type": "string",
+            "description": "A brief description of the thing.",
+            "minLength": 0,
+            "maxLength": 500
+        },
+        "characteristics": {
+            "type": "object",
+            "description": "A collection of characteristics for the thing.",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the characteristic.",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "The value of the characteristic.",
+                        "minLength": 1,
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "name",
+                    "value"
+                ]
+            }
+        },
+        "combination": {
+            "type": "array",
+            "description": "A list of combinations for the thing.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "thing": {
+                        "type": "string",
+                        "description": "The ID of the combined thing.",
+                        "pattern": "^[a-zA-Z0-9-]+$",
+                        "minLength": 3,
+                        "maxLength": 50
+                    },
+                    "combination": {
+                        "type": "array",
+                        "description": "Nested combinations for the thing.",
+                        "items": {}
+                    }
+                },
+                "required": [
+                    "thing",
+                    "combination"
+                ]
+            }
+        }
+    },
+    "required": [
+        "name",
+        "tenant",
+        "id",
+        "parentId",
+        "version",
+        "createdBy",
+        "updatedBy",
+        "createdTime",
+        "updatedTime",
+        "characteristics",
+        "combination"
+    ]
+}

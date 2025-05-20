@@ -23,7 +23,7 @@ func (a Auditor) BeforeInsert(schema repo.Schema, objs []repo.Record) error {
 	return nil
 }
 
-func (a Auditor) BeforeUpdate(schema repo.Schema, old *repo.Record, new repo.Record) error {
+func (a Auditor) BeforeUpdate(schema repo.Schema, old repo.Record, new repo.Record) error {
 	property, err := schema.Property("updatedTime")
 	if err != nil {
 		return nil

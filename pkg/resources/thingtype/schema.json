@@ -1,0 +1,194 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the thing type.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "tenant": {
+            "type": "string",
+            "description": "The tenant ID associated with the thing type.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "id": {
+            "type": "string",
+            "description": "The unique identifier for the thing type.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "parentTypeId": {
+            "type": "string",
+            "description": "The ID of the parent thing type, if any.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "version": {
+            "type": "string",
+            "description": "The version of the thing type.",
+            "pattern": "^\\d*$"
+        },
+        "createdBy": {
+            "type": "string",
+            "description": "The user who created the thing type.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "updatedBy": {
+            "type": "string",
+            "description": "The user who last updated the thing type.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "createdTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the thing type was created.",
+            "readOnly": true
+        },
+        "updatedTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the thing type was last updated.",
+            "readOnly": true
+        },
+        "description": {
+            "type": "string",
+            "description": "A brief description of the thing type.",
+            "minLength": 0,
+            "maxLength": 500
+        },
+        "characteristics": {
+            "type": "object",
+            "description": "A collection of characteristics for the thing type.",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the characteristic.",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "unit": {
+                        "type": "string",
+                        "description": "The unit of measurement for the characteristic.",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "length": {
+                        "type": "integer",
+                        "description": "The length as an integer value."
+                    },
+                    "dataType": {
+                        "type": "string",
+                        "description": "The data type of the characteristic.",
+                        "enum": [
+                            "string",
+                            "integer",
+                            "float",
+                            "boolean"
+                        ]
+                    },
+                    "defaultValue": {
+                        "type": "string",
+                        "description": "The default value for the characteristic."
+                    }
+                },
+                "required": [
+                    "name",
+                    "unit",
+                    "length",
+                    "dataType",
+                    "defaultValue"
+                ]
+            }
+        },
+        "propertySets": {
+            "type": "object",
+            "description": "A collection of property sets for the thing type.",
+            "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The name of the property.",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "unit": {
+                            "type": "string",
+                            "description": "The unit of measurement for the property.",
+                            "minLength": 1,
+                            "maxLength": 50
+                        },
+                        "length": {
+                            "type": "integer",
+                            "description": "The length of the property.",
+                            "minimum": 1,
+                            "maximum": 1000
+                        },
+                        "dataType": {
+                            "type": "string",
+                            "description": "The data type of the property.",
+                            "enum": [
+                                "string",
+                                "integer",
+                                "float",
+                                "boolean"
+                            ]
+                        },
+                        "accessMode": {
+                            "type": "string",
+                            "description": "The access mode for the property.",
+                            "enum": [
+                                "r",
+                                "rw",
+                                "w"
+                            ]
+                        },
+                        "min": {
+                            "type": "integer",
+                            "description": "The minimum value for the property."
+                        },
+                        "max": {
+                            "type": "integer",
+                            "description": "The maximum value for the property."
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "unit",
+                        "length",
+                        "dataType",
+                        "accessMode",
+                        "min",
+                        "max"
+                    ]
+                }
+            }
+        }
+    },
+    "required": [
+        "name",
+        "tenant",
+        "id",
+        "parentTypeId",
+        "version",
+        "createdBy",
+        "updatedBy",
+        "createdTime",
+        "updatedTime",
+        "description",
+        "characteristics",
+        "propertySets"
+    ]
+}

@@ -1,6 +1,6 @@
 package repository
 
-type UpdateFn[T Record] func(item *T) (T, error)
+type UpdateFn[T Record] func(item T) (T, error)
 
 type Creator[C any, T Record] interface {
 	Create(ctx C, items []T) error

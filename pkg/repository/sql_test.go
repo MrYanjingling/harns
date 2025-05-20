@@ -106,6 +106,109 @@ func TestFind(t *testing.T) {
 
 }
 
+func TestUpdate(t *testing.T) {
+	db := createDb()
+	defer db.Close()
+
+	repo := createRepo(db)
+	schema := userSchema()
+	ctx := Context{schema, "user"}
+	mustNil(repo.Init(ctx))
+
+	users := []Record{
+		Record(Object{
+			"name":   "Zhang san",
+			"age":    22,
+			"labels": Object{"color": "red", "height": 180},
+			"tags":   Array{"younger", "tall"},
+		}),
+		Record(Object{
+			"name":   "Li si",
+			"age":    25,
+			"labels": Object{"color": "green", "weight": 120},
+			"tags":   Array{"fashion"},
+		}),
+		Record(Object{
+			"name":   "Wang wu",
+			"age":    30,
+			"labels": Object{"color": "blue", "height": 150},
+			"tags":   Array{"older", "short"},
+		}),
+	}
+
+	t.Run("Create some tests data", func(t *testing.T) {
+		err := repo.Create(ctx, users)
+		mustNil(err)
+	})
+
+	t.Run("Update age of Zhang san to 23", func(t *testing.T) {
+		query := &Query{
+			Filter: &Binary{"name", &Eq{Value: "Zhang san"}},
+		}
+		updateFn := func(item Record) (Record, error) {
+			item.Set("age", 23)
+			return item, nil
+		}
+		updated, err := repo.Update(ctx, updateFn, query.Filter)
+		mustNil(err)
+		if val, ok := updated.Get("age"); !ok || val.(int) != 23 {
+			t.Errorf("Expected age 23, got %v", val)
+		}
+	})
+
+	t.Run("Update labels of Li si", func(t *testing.T) {
+		query := &Query{
+			Filter: &Binary{"name", &Eq{Value: "Li si"}},
+		}
+		updateFn := func(item Record) (Record, error) {
+			item.Set("labels", Object{"color": "yellow", "weight": 125})
+			return item, nil
+		}
+		_, err := repo.Update(ctx, updateFn, query.Filter)
+		mustNil(err)
+	})
+
+	t.Run("Update tags of Wang wu", func(t *testing.T) {
+		query := &Query{
+			Filter: &Binary{"name", &Eq{Value: "Wang wu"}},
+		}
+		updateFn := func(item Record) (Record, error) {
+			item.Set("tags", Array{"middle", "short"})
+			return item, nil
+		}
+		_, err := repo.Update(ctx, updateFn, query.Filter)
+		mustNil(err)
+	})
+
+	t.Run("Verify updates", func(t *testing.T) {
+		foundUsers, err := repo.Find(ctx, &Query{})
+		mustNil(err)
+		if len(foundUsers) != len(users) {
+			t.Errorf("Expected %d results, got %d", len(users), len(foundUsers))
+		}
+
+		for _, user := range foundUsers {
+			name, _ := user.Get("name")
+			switch name {
+			case "Zhang san":
+				if age, ok := user.Get("age"); !ok || age != 23 {
+					t.Errorf("Expected age 23 for Zhang san, got %v", age)
+				}
+			case "Li si":
+				labels, _ := user.Get("labels")
+				if labels.(Object)["color"] != "yellow" {
+					t.Errorf("Expected color yellow for Li si, got %v", labels.(Object)["color"])
+				}
+			case "Wang wu":
+				tags, _ := user.Get("tags")
+				if tags.(Array)[0] != "middle" {
+					t.Errorf("Expected tag middle for Wang wu, got %v", tags.(Array)[0])
+				}
+			}
+		}
+	})
+}
+
 func createRepo(db *sql.DB) *sqlRepo {
 	return &sqlRepo{
 		sb: sqlBuilder{

@@ -1,0 +1,319 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the agent.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "tenant": {
+            "type": "string",
+            "description": "The tenant ID associated with the agent.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "id": {
+            "type": "string",
+            "description": "The unique identifier for the agent.",
+            "pattern": "^[a-zA-Z0-9-]+$",
+            "minLength": 3,
+            "maxLength": 50
+        },
+        "version": {
+            "type": "string",
+            "description": "The version of the agent.",
+            "pattern": "^\\d*$"
+        },
+        "createdBy": {
+            "type": "string",
+            "description": "The user who created the agent.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "updatedBy": {
+            "type": "string",
+            "description": "The user who last updated the agent.",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "createdTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the agent was created.",
+            "readOnly": true
+        },
+        "updatedTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the agent was last updated.",
+            "readOnly": true
+        },
+        "description": {
+            "type": "string",
+            "description": "A brief description of the agent.",
+            "minLength": 0,
+            "maxLength": 500
+        },
+        "agentType": {
+            "type": "string",
+            "description": "The type of the agent.",
+            "enum": [
+                "Modbus",
+                "MQTT",
+                "modbusTCP",
+                "opcUa"
+            ]
+        },
+        "communication": {
+            "type": "object",
+            "description": "Communication settings for the agent.",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "The type of communication.",
+                    "enum": [
+                        "modbusTcp"
+                    ]
+                },
+                "collectorCycle": {
+                    "type": "integer",
+                    "description": "The collector cycle in milliseconds.",
+                    "minimum": 100,
+                    "maximum": 60000
+                },
+                "slave": {
+                    "type": "integer",
+                    "description": "The slave ID.",
+                    "minimum": 1,
+                    "maximum": 255
+                },
+                "memoryLayout": {
+                    "type": "string",
+                    "description": "The memory layout.",
+                    "enum": [
+                        "ABCD"
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "collectorCycle",
+                "slave",
+                "memoryLayout"
+            ]
+        },
+        "address": {
+            "type": "object",
+            "description": "Address settings for the agent.",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The location of the agent.",
+                    "minLength": 1,
+                    "maxLength": 255
+                },
+                "port": {
+                    "type": "string",
+                    "description": "The port number.",
+                    "pattern": "^\\d{1,5}$"
+                },
+                "username": {
+                    "type": "string",
+                    "description": "The username for authentication.",
+                    "minLength": 1,
+                    "maxLength": 100
+                },
+                "password": {
+                    "type": "string",
+                    "description": "The password for authentication.",
+                    "minLength": 1,
+                    "maxLength": 100
+                }
+            },
+            "required": [
+                "location",
+                "port",
+                "username",
+                "password"
+            ]
+        },
+        "datasources": {
+            "type": "array",
+            "description": "List of data sources for the agent.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "source": {
+                        "type": "object",
+                        "description": "Source configuration for the data source.",
+                        "properties": {
+                            "dataType": {
+                                "type": "string",
+                                "description": "The data type of the source.",
+                                "enum": [
+                                    "float64"
+                                ]
+                            },
+                            "address": {
+                                "type": "integer",
+                                "description": "The address of the source.",
+                                "minimum": 0,
+                                "maximum": 65535
+                            },
+                            "bit": {
+                                "type": "integer",
+                                "description": "The bit position.",
+                                "minimum": 0,
+                                "maximum": 7
+                            },
+                            "functionCode": {
+                                "type": "integer",
+                                "description": "The Modbus function code.",
+                                "enum": [
+                                    1, 2, 3, 4, 5, 6, 15, 16
+                                ]
+                            },
+                            "rate": {
+                                "type": "number",
+                                "description": "The rate of data collection.",
+                                "minimum": 0.1,
+                                "maximum": 1000
+                            },
+                            "offset": {
+                                "type": "number",
+                                "description": "The offset value.",
+                                "minimum": -1000,
+                                "maximum": 1000
+                            },
+                            "amount": {
+                                "type": "integer",
+                                "description": "The amount of data to collect.",
+                                "minimum": 1,
+                                "maximum": 1000
+                            },
+                            "defaultValue": {
+                                "type": "number",
+                                "description": "The default value.",
+                                "minimum": -1000,
+                                "maximum": 1000
+                            },
+                            "max": {
+                                "type": "number",
+                                "description": "The maximum value.",
+                                "minimum": -1000,
+                                "maximum": 1000
+                            },
+                            "min": {
+                                "type": "number",
+                                "description": "The minimum value.",
+                                "minimum": -1000,
+                                "maximum": 1000
+                            },
+                            "value": {
+                                "type": "number",
+                                "description": "The current value.",
+                                "minimum": -1000,
+                                "maximum": 1000
+                            },
+                            "accessMode": {
+                                "type": "string",
+                                "description": "The access mode for the source.",
+                                "enum": [
+                                    "rw"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "dataType",
+                            "address",
+                            "bit",
+                            "functionCode",
+                            "rate",
+                            "offset",
+                            "amount",
+                            "defaultValue",
+                            "max",
+                            "min",
+                            "value",
+                            "accessMode"
+                        ]
+                    },
+                    "target": {
+                        "type": "object",
+                        "description": "Target configuration for the data source.",
+                        "properties": {
+                            "thingId": {
+                                "type": "string",
+                                "description": "The ID of the target thing.",
+                                "pattern": "^[a-zA-Z0-9-]+$",
+                                "minLength": 3,
+                                "maxLength": 50
+                            },
+                            "thingName": {
+                                "type": "string",
+                                "description": "The name of the target thing.",
+                                "minLength": 1,
+                                "maxLength": 100
+                            },
+                            "thingTypeName": {
+                                "type": "string",
+                                "description": "The type name of the target thing.",
+                                "minLength": 1,
+                                "maxLength": 100
+                            },
+                            "thingTypeId": {
+                                "type": "string",
+                                "description": "The type ID of the target thing.",
+                                "pattern": "^[a-zA-Z0-9-]+$",
+                                "minLength": 3,
+                                "maxLength": 50
+                            },
+                            "propertySetName": {
+                                "type": "string",
+                                "description": "The name of the property set.",
+                                "minLength": 1,
+                                "maxLength": 100
+                            },
+                            "property": {
+                                "type": "string",
+                                "description": "The name of the property.",
+                                "minLength": 1,
+                                "maxLength": 100
+                            }
+                        },
+                        "required": [
+                            "thingId",
+                            "thingName",
+                            "thingTypeName",
+                            "thingTypeId",
+                            "propertySetName",
+                            "property"
+                        ]
+                    }
+                },
+                "required": [
+                    "source",
+                    "target"
+                ]
+            }
+        }
+    },
+    "required": [
+        "name",
+        "tenant",
+        "id",
+        "version",
+        "createdBy",
+        "updatedBy",
+        "createdTime",
+        "updatedTime",
+        "description",
+        "agentType",
+        "communication",
+        "address",
+        "datasources"
+    ]
+}
